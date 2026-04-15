@@ -31,12 +31,12 @@
         <section>
             <div class="flex justify-between items-end mb-6">
                 <h2 class="text-2xl font-black flex items-center gap-2">
-                    <span class="w-2 h-8 bg-green-500 rounded-full"></span> 중고 매입 신청 내역
+                    <span class="w-2 h-8 bg-blue-600 rounded-full"></span> 고객 판매(견적) 신청 내역
                 </h2>
-                <p class="text-sm text-gray-400" id="tradeInCount">접수 0건</p>
+                <p class="text-sm text-gray-400" id="requestCount">접수 0건</p>
             </div>
-            <div id="tradeInAdminList" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <p class="col-span-full text-center py-20 text-gray-400 bg-white rounded-[32px] border border-gray-100">매입 신청 내역을 불러오는 중입니다...</p>
+            <div id="requestAdminList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <p class="col-span-full text-center py-20 text-gray-400 bg-white rounded-[32px] border border-gray-100">판매 내역을 불러오는 중입니다...</p>
             </div>
         </section>
 
@@ -45,12 +45,12 @@
         <section>
             <div class="flex justify-between items-end mb-6">
                 <h2 class="text-2xl font-black flex items-center gap-2">
-                    <span class="w-2 h-8 bg-blue-600 rounded-full"></span> 실시간 견적 신청 내역
+                    <span class="w-2 h-8 bg-green-500 rounded-full"></span> 중고 매입 신청 내역
                 </h2>
-                <p class="text-sm text-gray-400" id="requestCount">접수 0건</p>
+                <p class="text-sm text-gray-400" id="tradeInCount">접수 0건</p>
             </div>
-            <div id="requestAdminList" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <p class="col-span-full text-center py-20 text-gray-400 bg-white rounded-[32px] border border-gray-100">견적 내역을 불러오는 중입니다...</p>
+            <div id="tradeInAdminList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <p class="col-span-full text-center py-20 text-gray-400 bg-white rounded-[32px] border border-gray-100">매입 내역을 불러오는 중입니다...</p>
             </div>
         </section>
 
@@ -90,16 +90,69 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        function checkAdmin() {
-            if(document.getElementById('adminPw').value === "1004") {
-                sessionStorage.setItem("adminLoggedIn", "true");
-                location.reload();
-            } else { alert("인증키가 틀렸습니다."); }
+        // 1. 고객 판매(견적) 신청 내역 로드 (requests 노드)
+        function loadRequests() {
+            db.ref('requests').on('value', (snapshot) => {
+                const data = snapshot.val();
+                const list = document.getElementById('requestAdminList');
+                const countText = document.getElementById('requestCount');
+
+                if (!data) {
+                    list.innerHTML = '<p class="col-span-full text-center py-20 text-gray-400 bg-white rounded-[32px] border border-gray-100">접수된 판매 내역이 없습니다.</p>';
+                    countText.innerText = "접수 0건";
+                    return;
+                }
+
+                const keys = Object.keys(data).reverse();
+                countText.innerText = `접수 ${keys.length}건`;
+
+                list.innerHTML = keys.map(key => {
+                    const req = data[key];
+                    const date = new Date(req.timestamp).toLocaleString();
+                    
+                    let itemsHtml = '';
+                    if (req.items) {
+                        itemsHtml = Object.entries(req.items).map(([cat, item]) => `
+                            <div class="flex justify-between items-center text-[11px] py-1 border-b border-gray-50 last:border-0">
+                                <span class="text-gray-400 font-bold w-12">${cat}</span>
+                                <span class="flex-1 text-gray-700 truncate px-2">${item.name}</span>
+                                <span class="text-blue-600 font-black">${item.count}개</span>
+                            </div>
+                        `).join('');
+                    }
+
+                    return `
+                        <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <span class="px-2 py-0.5 bg-blue-600 text-[10px] font-bold text-white rounded mb-2 inline-block">판매/견적 신청</span>
+                                    <h3 class="text-xl font-black text-gray-800">${req.name}</h3>
+                                    <p class="text-sm font-bold text-blue-500">${req.phone}</p>
+                                </div>
+                                <button onclick="deleteData('requests', '${key}')" class="text-gray-300 hover:text-red-500 text-sm">삭제</button>
+                            </div>
+                            <div class="bg-gray-50/50 p-4 rounded-2xl mb-4">
+                                <p class="text-[9px] font-bold text-gray-400 mb-2">신청 물품 리스트</p>
+                                ${itemsHtml || '<p class="text-gray-400 text-xs text-center">선택 품목 없음</p>'}
+                            </div>
+                            <div class="space-y-2">
+                                <div class="bg-blue-50/50 p-3 rounded-xl">
+                                    <p class="text-[9px] font-bold text-blue-400 mb-1">고객 메모</p>
+                                    <p class="text-[11px] text-gray-600 leading-snug">${req.memo || '내용 없음'}</p>
+                                </div>
+                                <div class="flex justify-between items-center px-1">
+                                    <span class="text-xs font-bold text-gray-400">최종 합계</span>
+                                    <span class="text-lg font-black text-gray-900">${req.totalPrice || '0원'}</span>
+                                </div>
+                            </div>
+                            <p class="mt-4 text-[9px] text-gray-300 text-right">${date}</p>
+                        </div>
+                    `;
+                }).join('');
+            });
         }
 
-        function logout() { sessionStorage.removeItem("adminLoggedIn"); location.reload(); }
-
-        // [추가] 중고 매입 신청 내역 로드
+        // 2. 중고 매입 신청 내역 로드 (trade_ins 노드)
         function loadTradeIns() {
             db.ref('trade_ins').on('value', (snapshot) => {
                 const data = snapshot.val();
@@ -119,7 +172,7 @@
                     const item = data[key];
                     const date = new Date(item.timestamp).toLocaleString();
                     return `
-                        <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm">
                             <div class="flex justify-between items-start mb-4">
                                 <div>
                                     <span class="px-2 py-0.5 bg-green-500 text-[10px] font-bold text-white rounded mb-2 inline-block">중고 매입</span>
@@ -128,69 +181,23 @@
                                 </div>
                                 <button onclick="deleteData('trade_ins', '${key}')" class="text-gray-300 hover:text-red-500 text-sm">삭제</button>
                             </div>
-                            <div class="bg-gray-50 p-4 rounded-2xl space-y-2">
-                                <div class="flex justify-between text-xs"><span class="text-gray-400">모델명</span><span class="font-bold">${item.modelName}</span></div>
-                                <div class="flex justify-between text-xs"><span class="text-gray-400">구입시기</span><span class="font-bold">${item.purchaseDate}</span></div>
-                                <div class="flex justify-between text-xs"><span class="text-gray-400">희망가</span><span class="font-black text-blue-600">${item.hopePrice}</span></div>
+                            <div class="bg-gray-50 p-4 rounded-2xl space-y-2 mb-4">
+                                <div class="flex justify-between text-[11px]"><span class="text-gray-400 font-bold">모델명</span><span class="font-bold text-gray-700">${item.modelName}</span></div>
+                                <div class="flex justify-between text-[11px]"><span class="text-gray-400 font-bold">구입시기</span><span class="font-bold text-gray-700">${item.purchaseDate}</span></div>
+                                <div class="flex justify-between text-[11px]"><span class="text-gray-400 font-bold">희망가</span><span class="font-black text-blue-600">${item.hopePrice}</span></div>
                             </div>
-                            <p class="mt-4 text-xs text-gray-500 bg-white border border-gray-100 p-3 rounded-xl italic">"${item.memo || '메모 없음'}"</p>
-                            <p class="mt-3 text-[10px] text-gray-300 text-right">${date}</p>
+                            <div class="bg-green-50/50 p-3 rounded-xl mb-3">
+                                <p class="text-[9px] font-bold text-green-400 mb-1">상태 메모</p>
+                                <p class="text-[11px] text-gray-600 leading-snug">${item.memo || '내용 없음'}</p>
+                            </div>
+                            <p class="text-[9px] text-gray-300 text-right">${date}</p>
                         </div>
                     `;
                 }).join('');
             });
         }
 
-        // 견적 신청 내역 로드
-        function loadRequests() {
-            db.ref('requests').on('value', (snapshot) => {
-                const data = snapshot.val();
-                const list = document.getElementById('requestAdminList');
-                const countText = document.getElementById('requestCount');
-
-                if (!data) {
-                    list.innerHTML = '<p class="col-span-full text-center py-20 text-gray-400 bg-white rounded-[32px] border border-gray-100">접수된 견적 내역이 없습니다.</p>';
-                    countText.innerText = "접수 0건";
-                    return;
-                }
-
-                const keys = Object.keys(data).reverse();
-                countText.innerText = `접수 ${keys.length}건`;
-
-                list.innerHTML = keys.map(key => {
-                    const req = data[key];
-                    const date = new Date(req.timestamp).toLocaleString();
-                    let itemsHtml = '';
-                    if (req.items) {
-                        itemsHtml = Object.entries(req.items).map(([cat, item]) => `
-                            <div class="flex justify-between items-center text-xs py-1 border-b border-gray-50 last:border-0">
-                                <span class="text-gray-400 font-bold w-12">${cat}</span>
-                                <span class="flex-1 text-gray-700 truncate px-2">${item.name}</span>
-                                <span class="text-blue-600 font-black">${item.count}개</span>
-                            </div>
-                        `).join('');
-                    }
-
-                    return `
-                        <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                            <div class="flex justify-between items-start mb-4">
-                                <div>
-                                    <span class="px-2 py-0.5 bg-blue-600 text-[10px] font-bold text-white rounded mb-2 inline-block">${req.type || '견적 신청'}</span>
-                                    <h3 class="text-xl font-black text-gray-800">${req.name}</h3>
-                                    <p class="text-sm font-bold text-blue-500">${req.phone}</p>
-                                </div>
-                                <button onclick="deleteData('requests', '${key}')" class="text-gray-300 hover:text-red-500 text-sm">삭제</button>
-                            </div>
-                            <div class="bg-gray-50/50 p-4 rounded-2xl mb-4">${itemsHtml || '<p class="text-gray-400 text-xs text-center">선택 품목 없음</p>'}</div>
-                            <div class="flex justify-between items-center"><span class="text-xs font-bold text-gray-400">최종 견적가</span><span class="text-xl font-black text-gray-900">${req.totalPrice || '0원'}</span></div>
-                            <p class="mt-2 text-[10px] text-gray-300 text-right">${date}</p>
-                        </div>
-                    `;
-                }).join('');
-            });
-        }
-
-        // 자료실 관리 및 기타 함수...
+        // 3. 공통 및 자료실 기능
         function addArchive() {
             const category = document.getElementById('arcCategory').value;
             const title = document.getElementById('arcTitle').value;
@@ -217,14 +224,23 @@
             });
         }
 
+        function checkAdmin() {
+            if(document.getElementById('adminPw').value === "1004") {
+                sessionStorage.setItem("adminLoggedIn", "true");
+                location.reload();
+            } else { alert("인증키가 틀렸습니다."); }
+        }
+
         function deleteData(node, key) {
             if(confirm('정말로 삭제하시겠습니까?')) db.ref(node).child(key).remove();
         }
 
+        function logout() { sessionStorage.removeItem("adminLoggedIn"); location.reload(); }
+
         window.onload = () => {
             if (sessionStorage.getItem("adminLoggedIn")) {
-                loadTradeIns(); // 중고 매입 로드 추가
-                loadRequests();
+                loadRequests(); // 내 물품 판매 내역
+                loadTradeIns(); // 중고 매입 내역
                 loadArchiveAdmin();
             } else {
                 document.getElementById('loginModal').classList.remove('hidden');
