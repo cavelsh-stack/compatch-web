@@ -208,29 +208,6 @@
             });
         }
 
-        // 공통 기능: 삭제, 로그인 등
-        function checkAdmin() {
-            if(document.getElementById('adminPw').value === "0927") {
-                sessionStorage.setItem("adminLoggedIn", "true");
-                location.reload();
-            } else { alert("인증키가 틀렸습니다."); }
-        }
-
-        function deleteData(node, key) {
-            if(confirm('데이터를 영구히 삭제하시겠습니까?')) db.ref(node).child(key).remove();
-        }
-
-        function logout() { sessionStorage.removeItem("adminLoggedIn"); location.reload(); }
-
-        window.onload = () => {
-            if (sessionStorage.getItem("adminLoggedIn")) {
-                loadRequests();      // 견적/판매 신청 내역 (부품 상세 포함)
-                loadArchiveAdmin();  // 자료실 리스트
-            } else {
-                document.getElementById('loginModal').classList.remove('hidden');
-                document.getElementById('loginModal').classList.add('flex');
-            }
-        };
 
 // 중고 품목 등록 함수
 function addUsedItem() {
@@ -282,6 +259,29 @@ window.onload = () => {
         loadUsedProductsAdmin(); // 중고 리스트 로드 추가
     }
 };
+        // 공통 기능: 삭제, 로그인 등
+        function checkAdmin() {
+            if(document.getElementById('adminPw').value === "0927") {
+                sessionStorage.setItem("adminLoggedIn", "true");
+                location.reload();
+            } else { alert("인증키가 틀렸습니다."); }
+        }
+
+        function deleteData(node, key) {
+            if(confirm('데이터를 영구히 삭제하시겠습니까?')) db.ref(node).child(key).remove();
+        }
+
+        function logout() { sessionStorage.removeItem("adminLoggedIn"); location.reload(); }
+
+        window.onload = () => {
+            if (sessionStorage.getItem("adminLoggedIn")) {
+                loadRequests();      // 견적/판매 신청 내역 (부품 상세 포함)
+                loadArchiveAdmin();  // 자료실 리스트
+            } else {
+                document.getElementById('loginModal').classList.remove('hidden');
+                document.getElementById('loginModal').classList.add('flex');
+            }
+        };
     </script>
 </body>
 </html>
