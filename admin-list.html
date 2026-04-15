@@ -131,45 +131,73 @@ function addUsedItem() {
     });
 }
         // [견적 내역 로드]
-        function loadRequests() {
-            db.ref('requests').on('value', (snapshot) => {
-                const data = snapshot.val();
-                const list = document.getElementById('requestList');
-                if (!data) { list.innerHTML = '<p class="text-gray-400 text-center">신청 내역 없음</p>'; return; }
-
-                const keys = Object.keys(data).reverse();
-                document.getElementById('totalCount').innerText = `접수 ${keys.length}건`;
-
-                list.innerHTML = keys.map(key => {
-                    const req = data[key];
-                    const itemsHtml = req.items ? req.items.map(i => `
-                        <div class="flex justify-between text-xs py-1 border-b border-gray-50 last:border-0">
-                            <span class="text-gray-600">${i.name} (${i.quantity}개)</span>
-                            <span class="font-bold">${(i.price * i.quantity).toLocaleString()}원</span>
-                        </div>
-                    `).join('') : '부품 정보 없음';
-
-                    return `
-                        <div class="bg-white rounded-3xl border border-gray-100 p-6 flex flex-col lg:flex-row gap-6 shadow-sm">
-                            <div class="flex-1">
-                                <div class="flex items-center gap-3 mb-4">
-                                    <span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-1 rounded font-bold">${new Date(req.timestamp).toLocaleString()}</span>
-                                    <h3 class="font-black text-lg">${req.name} (${req.phone})</h3>
-                                </div>
-                                <div class="bg-gray-50 p-4 rounded-2xl mb-4 text-sm">${req.memo || '메모 없음'}</div>
-                                <div class="bg-blue-50/30 p-4 rounded-2xl border border-blue-50">${itemsHtml}</div>
-                            </div>
-                            <div class="lg:w-48 flex flex-col justify-center items-end border-t lg:border-t-0 lg:border-l lg:pl-6 pt-4 lg:pt-0">
-                                <p class="text-xs text-gray-400 mb-1">최종 견적가</p>
-                                <p class="text-xl font-black text-blue-600 mb-4">${req.totalPrice}</p>
-                                <button onclick="deleteData('requests', '${key}')" class="text-xs text-red-400 underline">내역 삭제</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            });
+// [견적 및 중고 매입 내역 통합 로드]
+function loadRequests() {
+    db.ref('requests').on('value', (snapshot) => {
+        const data = snapshot.val();
+        const list = document.getElementById('requestList');
+        if (!data) { 
+            list.innerHTML = '<p class="text-gray-400 text-center py-20">접수된 내역이 없습니다.</p>'; 
+            document.getElementById('totalCount').innerText = "접수 0건";
+            return; 
         }
 
+        const keys = Object.keys(data).reverse();
+        document.getElementById('totalCount').innerText = `접수 ${keys.length}건`;
+
+        list.innerHTML = keys.map(key => {
+            const req = data[key];
+            const isUsed = req.type === "중고 매입 신청"; // 타입 구분
+            
+            // 1. 실시간 견적일 경우 부품 리스트 생성
+            const itemsHtml = !isUsed && req.items ? req.items.map(i => `
+                <div class="flex justify-between text-xs py-1 border-b border-gray-50 last:border-0">
+                    <span class="text-gray-600">${i.name} (${i.quantity}개)</span>
+                    <span class="font-bold">${(i.price * i.quantity).toLocaleString()}원</span>
+                </div>
+            `).join('') : '';
+
+            // 2. 중고 매입일 경우 신청 물품 정보 생성
+            const usedInfoHtml = isUsed ? `
+                <div class="bg-orange-50 p-4 rounded-2xl border border-orange-100">
+                    <p class="text-xs font-bold text-orange-400 mb-1 uppercase">신청한 중고 물품</p>
+                    <p class="text-sm font-black text-gray-800">${req.appliedItem || '제품 정보 없음'}</p>
+                    <p class="text-xs text-gray-500 mt-1">상태/사양: ${req.memo || '정보 없음'}</p>
+                </div>
+            ` : '';
+
+            return `
+                <div class="bg-white rounded-3xl border border-gray-100 p-6 flex flex-col lg:flex-row gap-6 shadow-sm mb-4">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-4">
+                            <span class="text-[10px] ${isUsed ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'} px-2 py-1 rounded font-bold">
+                                ${isUsed ? '중고 매입' : '실시간 견적'}
+                            </span>
+                            <span class="text-[10px] text-gray-400">${new Date(req.timestamp).toLocaleString()}</span>
+                            <h3 class="font-black text-lg">${req.name}</h3>
+                            <a href="tel:${req.phone}" class="text-sm text-blue-500 font-bold underline">${req.phone}</a>
+                        </div>
+                        
+                        ${isUsed ? usedInfoHtml : `
+                            <div class="bg-gray-50 p-4 rounded-2xl mb-4 text-sm text-gray-600 italic">"${req.memo || '메모 없음'}"</div>
+                            <div class="bg-blue-50/30 p-4 rounded-2xl border border-blue-50">
+                                <p class="text-[10px] font-bold text-blue-400 mb-2">선택 부품 리스트</p>
+                                ${itemsHtml || '부품 정보 없음'}
+                            </div>
+                        `}
+                    </div>
+                    <div class="lg:w-48 flex flex-col justify-center items-end border-t lg:border-t-0 lg:border-l lg:pl-6 pt-4 lg:pt-0">
+                        <p class="text-xs text-gray-400 mb-1">${isUsed ? '예상 매입가' : '최종 견적가'}</p>
+                        <p class="text-xl font-black ${isUsed ? 'text-orange-600' : 'text-blue-600'} mb-4">
+                            ${isUsed ? (req.expectedPrice ? req.expectedPrice.toLocaleString() + '원' : '상담 후 결정') : req.totalPrice}
+                        </p>
+                        <button onclick="deleteData('requests', '${key}')" class="text-xs text-red-300 hover:text-red-500 underline">내역 삭제</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    });
+}
         // [자료실 관리 로직]
         function uploadArchive() {
             const category = document.getElementById('arcCat').value;
