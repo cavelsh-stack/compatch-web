@@ -130,27 +130,25 @@
         gpuSelect.addEventListener('change', calculatePrice);
         conditionRadios.forEach(radio => radio.addEventListener('change', calculatePrice));
 
-// 중고 매입 폼 제출 이벤트 내부 수정
-document.getElementById('tradeInForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-
-    const tradeInData = {
-        name: e.target.querySelector('input[placeholder="신청자 성함"]').value,
-        phone: e.target.querySelector('input[placeholder="연락처 (010-0000-0000)"]').value,
-        device: e.target.querySelector('input[name="device_type"]:checked').value,
-        price: document.getElementById('estimatedPrice').innerText,
-        type: "매입 신청",
+function submitTradeIn() {
+    const userName = document.getElementById('userName').value;
+    const userPhone = document.getElementById('userPhone').value;
+    
+    // 현재 사용자가 선택한 중고 물품 정보 (전역 변수 등으로 저장되어 있어야 함)
+    const requestData = {
+        type: "중고 매입 신청",
+        name: userName,
+        phone: userPhone,
+        // 이 부분이 핵심: 선택된 제품명과 가격을 포함
+        appliedItem: currentSelectedItemName, 
+        expectedPrice: currentSelectedItemPrice,
         timestamp: Date.now()
     };
 
-    db.ref('requests').push(tradeInData, (error) => {
-        if (!error) {
-            alert('매입 신청이 성공적으로 접수되었습니다!');
-            location.href = "index.html";
-        }
+    db.ref('requests').push(requestData).then(() => {
+        alert("매입 신청이 접수되었습니다.");
     });
-});
-
+}
     </script>
 <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
