@@ -71,6 +71,24 @@
             </div>
         </div>
     </main>
+<div id="consultModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[100] p-4">
+    <div class="bg-white w-full max-w-md rounded-3xl overflow-hidden shadow-2xl">
+        <div class="p-6 bg-gray-900 text-white flex justify-between items-center">
+            <h3 class="text-xl font-bold">상담 신청하기</h3>
+            <button onclick="closeConsultModal()" class="text-gray-400 hover:text-white">닫기</button>
+        </div>
+        <form id="consultForm" class="p-6 space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-gray-400 mb-1">최종 견적 금액</label>
+                <p id="modalTotalPrice" class="text-2xl font-black text-blue-600">0원</p>
+            </div>
+            <input type="text" id="userName" required placeholder="성함" class="w-full p-3 border rounded-xl">
+            <input type="tel" id="userPhone" required placeholder="연락처" class="w-full p-3 border rounded-xl">
+            <textarea id="userMemo" placeholder="메모" class="w-full p-3 border rounded-xl"></textarea>
+            <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-black">신청 완료</button>
+        </form>
+    </div>
+</div>
 
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
