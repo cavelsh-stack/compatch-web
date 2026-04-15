@@ -8,27 +8,49 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
+        
+        /* 커스텀 애니메이션 정의 */
+        @keyframes fadeLoop {
+            0%, 100% { opacity: 0; transform: scale(1); } /* 시작과 끝은 투명 */
+            10%, 30% { opacity: 0.7; transform: scale(1.05); } /* 나타나서 유지 (약간 확대) */
+            40% { opacity: 0; transform: scale(1.1); } /* 서서히 사라짐 */
+        }
+
+        .animate-fade-loop {
+            animation: fadeLoop 12s infinite; /* 12초 주기로 무한 반복 */
+            opacity: 0; /* 초기 상태 투명 */
+        }
+
+        /* 각 이미지별 지연 시간 설정 (겹치는 효과) */
+        .delay-cpu { animation-delay: 0s; }
+        .delay-ram { animation-delay: 4s; } /* CPU가 사라질 즈음 나타남 */
+        .delay-ssd { animation-delay: 8s; } /* RAM이 사라질 즈음 나타남 */
     </style>
 </head>
-<body class="bg-gray-50 text-gray-900">
+<body class="bg-gray-50 text-gray-900 overflow-x-hidden">
 
     <nav class="sticky top-0 z-50 bg-white border-b border-gray-100">
-        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-8">
-                <a href="index.html" class="text-2xl font-black text-blue-600 tracking-tighter">COMPATCH</a>
-                <div class="hidden md:flex gap-6 text-sm font-semibold text-gray-600">
-                    <a href="index.html" class="hover:text-blue-600">메인으로</a>
-                    <a href="estimate.html" class="hover:text-blue-600">실시간 견적</a>
-                    <a href="trade-in.html" class="hover:text-blue-600">중고 매입</a>
-                    <a href="archive.html" class="hover:text-blue-600">자료실</a>
-                    <a href="admin-list.html" class="hover:text-blue-600">관리자</a>
-                </div>
-            </div>
-            </div>
-    </nav>
+        </nav>
 
-    <header class="relative bg-white pt-20 pb-32 overflow-hidden">
-        <div class="max-w-7xl mx-auto px-4 relative z-10">
+    <header class="relative bg-white pt-20 pb-32 overflow-hidden min-h-[80vh] flex items-center">
+        
+        <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1591799264318-7e698ddb7c1d?q=80&w=1000&auto=format&fit=crop" 
+                 alt="CPU 배경" 
+                 class="absolute w-full h-full object-cover animate-fade-loop delay-cpu filter blur-sm opacity-0">
+            
+            <img src="https://images.unsplash.com/photo-1562976540-1502c2145186?q=80&w=1000&auto=format&fit=crop" 
+                 alt="RAM 배경" 
+                 class="absolute w-full h-full object-cover animate-fade-loop delay-ram filter blur-sm opacity-0">
+            
+            <img src="https://images.unsplash.com/photo-1628527303038-f99999999999?q=80&w=1000&auto=format&fit=crop" 
+                 alt="SSD 배경" 
+                 class="absolute w-full h-full object-cover animate-fade-loop delay-ssd filter blur-sm opacity-0">
+            
+            <div class="absolute inset-0 bg-white/70"></div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-4 relative z-10 w-full">
             <div class="max-w-3xl">
                 <div class="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full text-sm font-bold mb-6">
                     <span class="relative flex h-2 w-2">
@@ -37,10 +59,10 @@
                     </span>
                     실시간 가격 자동 업데이트 시스템 가동 중
                 </div>
-                <h1 class="text-6xl md:text-8xl font-black leading-tight tracking-tighter mb-8">
+                <h1 class="text-6xl md:text-8xl font-black leading-tight tracking-tighter mb-8 break-keep">
                     Smart PC<br><span class="text-blue-600">Solution.</span>
                 </h1>
-                <p class="text-xl text-gray-500 font-medium leading-relaxed mb-10">
+                <p class="text-xl text-gray-500 font-medium leading-relaxed mb-10 break-keep">
                     복잡한 견적부터 중고 매입까지 한 번에.<br>
                     가장 투명한 가격으로 당신의 PC를 완성하세요.
                 </p>
@@ -51,27 +73,10 @@
                 </div>
             </div>
         </div>
-        <div class="absolute right-0 top-0 w-1/2 h-full bg-gradient-to-l from-blue-50/50 to-transparent hidden lg:block"></div>
     </header>
 
     <footer class="bg-white border-t border-gray-100 pt-20 pb-10">
-        <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12">
-            <div>
-                <a href="#" class="text-2xl font-black text-blue-600 mb-6 block">COMPATCH</a>
-                <p class="text-sm text-gray-400 leading-relaxed mb-6">
-                    (Compatch Dot Com) | 대표자: 이성호<br>
-                    사업자등록번호: 000-00-00000 | 통신판매업: 제2026-서울강남-0000호<br>
-                    주소: 서울특별시 강남구 어딘가 렉스김 빌딩 4층
-                </p>
-            </div>
-            <div class="flex flex-col justify-end items-end">
-                <p class="text-sm text-gray-400">문의: help@compatch.com</p>
-            </div>
-        </div>
-        <div class="max-w-7xl mx-auto mt-10 pt-8 border-t border-gray-200 text-center text-xs text-gray-400">
-            © 2026 Compatch Dot Com. All Rights Reserved.
-        </div>
-    </footer>
+        </footer>
 
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
