@@ -9,9 +9,6 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         .sticky-summary { position: sticky; top: 5rem; }
-        /* 이미지 로딩 애니메이션 */
-        .loading-skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: loading 1.5s infinite; }
-        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900">
@@ -32,30 +29,36 @@
         <div class="flex flex-col lg:flex-row gap-8">
             
             <div class="flex-1">
-                <div class="flex items-center justify-between mb-8">
-                    <h2 class="text-2xl font-black tracking-tight">부품 선택 <span class="text-blue-600 text-sm ml-2" id="lastUpdateText">네이버 실시간 시세 반영 중</span></h2>
-                </div>
-
-                <div id="partsContainer" class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div class="p-10 text-center col-span-full text-gray-400">데이터를 불러오고 있습니다...</div>
+                <h2 class="text-2xl font-black tracking-tight mb-8">부품 선택 <span class="text-blue-600 text-sm ml-2">네이버 실시간 시세 반영 중</span></h2>
+                
+                <div id="categorySections" class="space-y-12">
+                    <div class="p-10 text-center text-gray-400">데이터를 불러오고 있습니다...</div>
                 </div>
             </div>
 
             <div class="w-full lg:w-96">
                 <div class="sticky-summary bg-white rounded-3xl border border-gray-100 shadow-xl overflow-hidden">
                     <div class="p-6 bg-gray-900 text-white">
-                        <h3 class="text-lg font-bold">견적 합계</h3>
+                        <h3 class="text-lg font-bold">최종 견적 합계</h3>
                         <p class="text-3xl font-black text-blue-400 mt-2" id="totalDisplay">0원</p>
                     </div>
                     
                     <div class="p-6">
-                        <div id="selectedList" class="space-y-4 mb-6 min-h-[200px]">
+                        <div id="selectedList" class="space-y-4 mb-6 min-h-[150px]">
                             <p class="text-gray-400 text-sm text-center py-10">선택된 부품이 없습니다.</p>
                         </div>
                         
-                        <div class="border-t border-dashed pt-6 space-y-3">
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-500">부품 수</span>
+                        <div class="border-t border-dashed pt-6 space-y-4">
+                            <label class="flex items-center justify-between p-3 bg-blue-50 rounded-xl cursor-pointer group">
+                                <div class="flex items-center gap-3">
+                                    <input type="checkbox" id="assemblyOption" onchange="updateUI()" class="w-5 h-5 accent-blue-600">
+                                    <span class="text-sm font-bold text-gray-700">조립 및 1년 A/S 포함</span>
+                                </div>
+                                <span class="text-sm font-black text-blue-600">+100,000원</span>
+                            </label>
+
+                            <div class="flex justify-between text-sm px-2">
+                                <span class="text-gray-500">선택 품목 수</span>
                                 <span class="font-bold" id="itemCount">0개</span>
                             </div>
                         </div>
@@ -69,92 +72,79 @@
         </div>
     </main>
 
-    <div id="consultModal" class="fixed inset-0 bg-black/60 z-[100] hidden items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-md rounded-3xl overflow-hidden animate-in fade-in zoom-in duration-300">
-            <div class="p-6 border-b border-gray-50 flex justify-between items-center bg-gray-50">
-                <h3 class="font-black text-xl">상담 신청</h3>
-                <button onclick="closeConsultModal()" class="text-2xl text-gray-400 hover:text-gray-900">&times;</button>
-            </div>
-            <form id="consultForm" class="p-6 space-y-4">
-                <input type="text" id="userName" required class="w-full border rounded-lg px-4 py-3 outline-none focus:border-blue-500" placeholder="성함">
-                <input type="tel" id="userPhone" required class="w-full border rounded-lg px-4 py-3 outline-none focus:border-blue-500" placeholder="연락처">
-                <textarea id="userMemo" class="w-full border rounded-lg px-4 py-3 h-24 outline-none focus:border-blue-500" placeholder="추가 요청사항 (배송 등)"></textarea>
-                <div class="bg-blue-50 p-4 rounded-xl">
-                    <p class="text-xs text-blue-500 font-bold">최종 신청 금액</p>
-                    <p id="modalTotalPrice" class="text-xl font-black text-blue-600">0원</p>
-                </div>
-                <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition">신청 완료</button>
-            </form>
-        </div>
-    </div>
-
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 
     <script>
-        // 1. Firebase 설정 (사용자 프로젝트 정보)
+        // Firebase 설정 (기존 정보 유지)
         const firebaseConfig = {
-            apiKey: "AIzaSyB...", // 본인의 키로 자동 적용됨
             authDomain: "compatch-e7305.firebaseapp.com",
             databaseURL: "https://compatch-e7305-default-rtdb.asia-southeast1.firebasedatabase.app/",
-            projectId: "compatch-e7305",
-            storageBucket: "compatch-e7305.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:abcdef"
+            projectId: "compatch-e7305"
         };
-        
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let selectedItems = [];
+        let selectedItems = []; // { id, name, price, cat, quantity }
 
-        // 2. Firebase에서 네이버 시세 데이터 실시간 로드 및 카드 생성
+        // 메인 시리즈 카테고리 정의
+        const MAIN_SERIES = ["인텔 울트라 시리즈", "인텔 14세대 시리즈", "AMD 시리즈"];
+
         function loadParts() {
-            const container = document.getElementById('partsContainer');
+            const container = document.getElementById('categorySections');
             
             db.ref('parts').on('value', (snapshot) => {
-                const categories = snapshot.val();
-                if (!categories) {
-                    container.innerHTML = '<div class="p-10 text-center col-span-full text-gray-400">등록된 부품 데이터가 없습니다.</div>';
-                    return;
-                }
+                const data = snapshot.val();
+                if (!data) return;
 
-                container.innerHTML = ''; // 초기화
+                container.innerHTML = ''; 
 
-                Object.keys(categories).forEach(cat => {
-                    const items = categories[cat];
-                    Object.keys(items).forEach(id => {
-                        const item = items[id];
-                        
-                        // HTML 카드 생성 (네이버 API로 가져온 이미지와 가격 반영)
-                        const card = `
-                            <div class="group bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all cursor-pointer flex flex-col">
-                                <div class="aspect-square bg-gray-50 rounded-xl mb-4 flex items-center justify-center overflow-hidden">
-                                    <img src="${item.image}" alt="${item.name}" class="w-full h-full object-contain group-hover:scale-110 transition duration-300">
+                MAIN_SERIES.forEach(series => {
+                    const seriesDiv = document.createElement('div');
+                    seriesDiv.innerHTML = `<h3 class="text-xl font-extrabold mb-6 border-l-4 border-blue-600 pl-3">${series}</h3>`;
+                    
+                    const grid = document.createElement('div');
+                    grid.className = "grid grid-cols-2 md:grid-cols-3 gap-4 mb-10";
+                    
+                    // 해당 시리즈에 속하는 부품 필터링 (Firebase 데이터 구조에 따라 cat 체크)
+                    if (data[series]) {
+                        Object.keys(data[series]).forEach(id => {
+                            const item = data[series][id];
+                            grid.innerHTML += `
+                                <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:border-blue-300 transition-all">
+                                    <div class="aspect-square bg-gray-50 rounded-xl mb-3 flex items-center justify-center overflow-hidden">
+                                        <img src="${item.image}" class="w-24 h-24 object-contain">
+                                    </div>
+                                    <div class="text-[10px] text-blue-500 font-bold mb-1">${item.type || 'CPU/RAM/GPU'}</div>
+                                    <h4 class="font-bold text-sm mb-2 h-10 line-clamp-2">${item.name}</h4>
+                                    <p class="text-blue-600 font-black mb-3">${item.price.toLocaleString()}원</p>
+                                    <button onclick="addItem('${id}', '${series}', '${item.name}', ${item.price})" 
+                                            class="w-full py-2 bg-gray-900 text-white rounded-lg text-xs font-bold hover:bg-blue-600 transition">추가</button>
                                 </div>
-                                <div class="inline-block self-start px-2 py-1 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-md mb-2 uppercase">${cat}</div>
-                                <h3 class="font-bold text-gray-900 text-sm mb-1 line-clamp-2 h-10">${item.name}</h3>
-                                <p class="text-blue-600 font-black text-lg mt-auto">${item.price.toLocaleString()}원</p>
-                                <button onclick="addItem('${id}', '${cat}', '${item.name}', ${item.price})" 
-                                        class="w-full mt-4 py-3 bg-gray-900 text-white rounded-xl font-bold text-xs group-hover:bg-blue-600 transition">
-                                    추가하기
-                                </button>
-                            </div>
-                        `;
-                        container.innerHTML += card;
-                    });
+                            `;
+                        });
+                    }
+                    seriesDiv.appendChild(grid);
+                    container.appendChild(seriesDiv);
                 });
             });
         }
 
-        // 3. 부품 추가 및 견적 계산 로직
         function addItem(id, cat, name, price) {
-            selectedItems.push({ id, cat, name, price });
+            const existIndex = selectedItems.findIndex(item => item.id === id);
+            if (existIndex > -1) {
+                selectedItems[existIndex].quantity += 1;
+            } else {
+                selectedItems.push({ id, cat, name, price, quantity: 1 });
+            }
             updateUI();
         }
 
-        function removeItem(index) {
-            selectedItems.splice(index, 1);
+        function updateQuantity(index, delta) {
+            selectedItems[index].quantity += delta;
+            if (selectedItems[index].quantity <= 0) {
+                selectedItems.splice(index, 1);
+            }
             updateUI();
         }
 
@@ -162,27 +152,40 @@
             const list = document.getElementById('selectedList');
             const totalDisplay = document.getElementById('totalDisplay');
             const itemCount = document.getElementById('itemCount');
+            const isAssembled = document.getElementById('assemblyOption').checked;
             
             if (selectedItems.length === 0) {
                 list.innerHTML = '<p class="text-gray-400 text-sm text-center py-10">선택된 부품이 없습니다.</p>';
             } else {
                 list.innerHTML = selectedItems.map((item, index) => `
-                    <div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100 animate-in slide-in-from-right-2 duration-200">
-                        <div class="flex-1 min-w-0 mr-4">
-                            <p class="text-[10px] font-bold text-blue-500 uppercase">${item.cat}</p>
-                            <p class="text-xs font-bold text-gray-800 truncate">${item.name}</p>
-                            <p class="text-xs text-gray-500">${item.price.toLocaleString()}원</p>
+                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex-1 pr-2">
+                                <p class="text-[9px] font-bold text-blue-500">${item.cat}</p>
+                                <p class="text-xs font-bold text-gray-800 truncate">${item.name}</p>
+                            </div>
+                            <button onclick="updateQuantity(${index}, -${item.quantity})" class="text-gray-300 hover:text-red-500">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
                         </div>
-                        <button onclick="removeItem(${index})" class="text-gray-300 hover:text-red-500 p-1">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="6 18L18 6M6 6l12 12"></path></svg>
-                        </button>
+                        <div class="flex justify-between items-center mt-2">
+                            <div class="flex items-center border rounded-lg bg-white">
+                                <button onclick="updateQuantity(${index}, -1)" class="px-2 py-1 text-gray-500 hover:bg-gray-100">-</button>
+                                <span class="px-3 text-xs font-bold border-x">${item.quantity}</span>
+                                <button onclick="updateQuantity(${index}, 1)" class="px-2 py-1 text-gray-500 hover:bg-gray-100">+</button>
+                            </div>
+                            <p class="text-xs font-black text-gray-900">${(item.price * item.quantity).toLocaleString()}원</p>
+                        </div>
                     </div>
                 `).join('');
             }
 
-            const total = selectedItems.reduce((sum, item) => sum + item.price, 0);
-            totalDisplay.innerText = `${total.toLocaleString()}원`;
-            itemCount.innerText = `${selectedItems.length}개`;
+            // 합계 계산
+            let subtotal = selectedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            if (isAssembled && selectedItems.length > 0) subtotal += 100000;
+
+            totalDisplay.innerText = `${subtotal.toLocaleString()}원`;
+            itemCount.innerText = `${selectedItems.length}종`;
         }
 
         // 4. 모달 및 폼 제출
