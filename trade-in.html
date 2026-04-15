@@ -41,7 +41,7 @@
         const db = firebase.database();
 
 function loadUsedProducts() {
-    // [중요] 'products'가 아닌 'used_db' 경로를 바라보도록 수정
+    // 관리자가 저장한 'used_db' 경로에서 데이터를 가져옵니다.
     db.ref('used_db').on('value', (snapshot) => {
         const data = snapshot.val();
         const container = document.getElementById('usedProductContainer');
@@ -57,13 +57,13 @@ function loadUsedProducts() {
             return `
                 <div class="bg-white rounded-[40px] overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all group">
                     <div class="aspect-video overflow-hidden bg-gray-100">
-                        <img src="${item.image || item.img}" alt="${item.name}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                        <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                     </div>
                     <div class="p-8">
                         <h3 class="font-black text-xl mb-2 text-gray-800 truncate">${item.name}</h3>
                         <p class="text-2xl font-black text-blue-600 mb-8">${(item.price || 0).toLocaleString()}원</p>
                         <button onclick="applyPurchase('${item.name}', ${item.price})" 
-                                class="w-full py-5 bg-gray-900 text-white rounded-2xl font-black hover:bg-blue-600 transition shadow-lg shadow-gray-200 hover:shadow-blue-200">
+                                class="w-full py-5 bg-gray-900 text-white rounded-2xl font-black hover:bg-blue-600 transition shadow-lg">
                             구매 상담 신청
                         </button>
                     </div>
@@ -72,6 +72,7 @@ function loadUsedProducts() {
         }).join('');
     });
 }
+
         function applyPurchase(itemName, itemPrice) {
             const name = prompt("고객님의 성함을 입력해주세요.");
             if(!name) return;
