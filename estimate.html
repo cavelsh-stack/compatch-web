@@ -212,9 +212,15 @@
             itemCount.innerText = `${selectedItems.length}종`;
         }
 
-        // 4. 모달 및 폼 제출
+    </script>
+
+// 4. 모달 및 폼 제출 로직 (기존 로직 보완)
         function openConsultModal() {
-            if (selectedItems.length === 0) return alert("부품을 먼저 선택해주세요.");
+            if (selectedItems.length === 0) {
+                alert("부품을 먼저 선택해주세요.");
+                return;
+            }
+            // 현재 화면의 합계를 모달에 반영
             document.getElementById('modalTotalPrice').innerText = document.getElementById('totalDisplay').innerText;
             document.getElementById('consultModal').classList.remove('hidden');
             document.getElementById('consultModal').classList.add('flex');
@@ -227,26 +233,32 @@
 
         document.getElementById('consultForm').addEventListener('submit', function(e) {
             e.preventDefault();
+            
             const requestData = {
                 name: document.getElementById('userName').value,
                 phone: document.getElementById('userPhone').value,
                 memo: document.getElementById('userMemo').value,
-                items: selectedItems,
+                items: selectedItems, // 선택된 부품 목록 전체
                 totalPrice: document.getElementById('totalDisplay').innerText,
-                type: "상담 신청",
+                type: "견적 상담 신청",
                 timestamp: Date.now()
             };
 
+            // Firebase의 'requests' 노드에 저장
             db.ref('requests').push(requestData, (error) => {
                 if (!error) {
-                    alert('견적 상담 신청이 완료되었습니다. 확인 후 연락드리겠습니다.');
-                    location.reload();
+                    alert('견적 상담 신청이 완료되었습니다. 확인 후 연락드리겠습니다!');
+                    location.reload(); // 성공 후 페이지 새로고침
+                } else {
+                    alert('오류가 발생했습니다: ' + error.message);
                 }
             });
         });
 
-        // 초기 실행
-        window.onload = loadParts;
-    </script>
+        // 페이지 로드 시 실행
+        window.onload = function() {
+            loadParts();
+        };
+
 </body>
 </html>
