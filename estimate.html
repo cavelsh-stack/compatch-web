@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>실시간 견적 |Well Design</title>
+    <title>실시간 견적 | Well Design</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', 'Malgun Gothic', sans-serif; }
         .sticky-summary { position: sticky; top: 5rem; }
-        /* PDF 템플릿 숨김 처리 */
         #pdf-template { display: none; }
     </style>
 </head>
@@ -19,10 +18,10 @@
     <nav class="bg-white border-b border-gray-100 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <a href="index.html" class="text-xl font-black text-blue-600">COMPATCH</a>
-            <div class="hidden md:flex gap-6 text-sm font-semibold">
+            <div class="hidden md:flex gap-6 text-sm font-semibold text-gray-600">
                 <a href="index.html">메인으로</a>
-                <a href="#" class="text-blue-600">실시간 견적</a>
-                <a href="trade-in.html">중고 판매</a>
+                <a href="estimate.html" class="text-blue-600">실시간 견적</a>
+                <a href="trade-in.html">중고 매입</a>
                 <a href="archive.html">자료실</a>
             </div>
         </div>
@@ -31,7 +30,8 @@
     <main class="max-w-7xl mx-auto px-4 py-10">
         <div class="flex flex-col lg:flex-row gap-8">
             <div class="flex-1 space-y-6" id="partsContainer">
-                </div>
+                <div class="text-center py-20 text-gray-400">상품 정보를 불러오는 중입니다...</div>
+            </div>
 
             <div class="w-full lg:w-96">
                 <div class="sticky-summary bg-white p-6 rounded-3xl shadow-xl border border-gray-100">
@@ -56,105 +56,80 @@
     <div id="consultModal" class="fixed inset-0 bg-black/60 z-[100] hidden items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white w-full max-w-md rounded-[32px] p-8 shadow-2xl">
             <h2 class="text-2xl font-black mb-2">상담 신청하기</h2>
-            <p class="text-gray-500 text-sm mb-6">신청 즉시 견적서 PDF가 다운로드됩니다.</p>
             <form id="consultForm" class="space-y-4">
-                <input type="text" id="userName" placeholder="성함" required class="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none">
-                <input type="tel" id="userPhone" placeholder="연락처" required class="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none">
-                <textarea id="userMemo" placeholder="추가 요청사항 (선택)" rows="3" class="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none resize-none"></textarea>
-                <div class="flex gap-3 mt-4">
-                    <button type="button" onclick="closeConsultModal()" class="flex-1 py-4 font-bold text-gray-400 hover:text-gray-600">취소</button>
-                    <button type="submit" class="flex-[2] bg-blue-600 text-white py-4 rounded-2xl font-black hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">신청 완료</button>
-                </div>
+                <input type="text" id="userName" placeholder="성함" required class="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none">
+                <input type="tel" id="userPhone" placeholder="연락처" required class="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none">
+                <textarea id="userMemo" placeholder="요청사항" rows="3" class="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none resize-none"></textarea>
+                <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black hover:bg-blue-700">신청 완료</button>
+                <button type="button" onclick="closeConsultModal()" class="w-full text-gray-400 text-sm mt-2">닫기</button>
             </form>
         </div>
     </div>
 
-    <div id="pdf-template" style="padding: 40px; background: white;">
-        <div style="border-bottom: 4px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
-            <div>
-                <h1 style="font-size: 28px; font-weight: 900; color: #1a1a1a; margin: 0;">PC 조립 견적서</h1>
-                <p style="color: #666; margin: 5px 0 0 0;">Compatch Smart PC Solution</p>
-            </div>
-            <div style="text-align: right; font-size: 12px; color: #999;">
-                발행일: <span id="pdf-date"></span>
-            </div>
-        </div>
-        
-        <div style="margin-bottom: 30px; display: flex; gap: 40px;">
-            <div style="flex: 1;">
-                <h3 style="font-size: 14px; color: #2563eb; margin-bottom: 10px;">고객 정보</h3>
-                <p style="margin: 4px 0;"><strong>성함:</strong> <span id="pdf-name"></span></p>
-                <p style="margin: 4px 0;"><strong>연락처:</strong> <span id="pdf-phone"></span></p>
-            </div>
-        </div>
-
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
-            <thead>
-                <tr style="background-color: #f8fafc; border-top: 2px solid #333;">
-                    <th style="padding: 12px; border-bottom: 1px solid #eee; text-align: left;">구분</th>
-                    <th style="padding: 12px; border-bottom: 1px solid #eee; text-align: left;">제품명</th>
-                    <th style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;">금액</th>
-                </tr>
-            </thead>
-            <tbody id="pdf-items"></tbody>
-        </table>
-
-        <div style="background: #f8fafc; padding: 20px; border-radius: 10px; text-align: right;">
-            <span style="font-size: 16px; color: #666; margin-right: 20px;">최종 합계</span>
-            <span id="pdf-total" style="font-size: 24px; font-weight: 900; color: #2563eb;"></span>
-        </div>
-        
-        <div style="margin-top: 50px; border-top: 1px dashed #ddd; padding-top: 20px; font-size: 11px; color: #999; line-height: 1.6;">
-            * 본 견적서는 신청일 기준의 시장가를 반영하고 있습니다.<br>
-            * 재고 상황 및 부품 시세 변동에 따라 최종 결제 금액이 달라질 수 있습니다.<br>
-            * 상담 신청 시 담당자가 확인 후 영업일 기준 24시간 내에 연락드립니다.
-        </div>
-    </div>
+    <div id="pdf-template">...</div>
 
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 
     <script>
-        // Firebase 설정 (실제 환경에 맞게 입력)
-        const firebaseConfig = { databaseURL: "https://your-project-id.firebaseio.com" };
+        // 1. Firebase 초기화 (본인의 URL로 반드시 교체하세요)
+        const firebaseConfig = { 
+            databaseURL: "https://compatch-e7305-default-rtdb.asia-southeast1.firebasedatabase.app/" 
+        };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         let selectedItems = {};
 
-        // 부품 로드 및 선택 로직 (기존과 동일)
+        // 2. 부품 데이터 로드 함수 (구조 보정)
         function loadParts() {
             db.ref('parts').on('value', (snapshot) => {
                 const data = snapshot.val();
                 const container = document.getElementById('partsContainer');
-                if (!data) return;
+                
+                if (!data) {
+                    container.innerHTML = '<div class="text-center py-20 text-gray-400">등록된 상품 정보가 없습니다.</div>';
+                    return;
+                }
 
                 let html = '';
-                Object.keys(data).forEach(category => {
+                // 시리즈(인텔 울트라 시리즈 등) 별로 반복
+                Object.keys(data).forEach(series => {
                     html += `
-                        <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm">
+                        <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm mb-6">
                             <h3 class="text-lg font-black mb-4 flex items-center gap-2">
-                                <span class="w-2 h-6 bg-blue-600 rounded-full"></span> ${category}
+                                <span class="w-2 h-6 bg-blue-600 rounded-full"></span> ${series}
                             </h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                ${Object.keys(data[category]).map(partKey => {
-                                    const part = data[category][partKey];
-                                    return `
-                                        <button onclick="selectPart('${category}', '${part.name}', ${part.price})" 
-                                                class="flex justify-between items-center p-4 rounded-2xl border border-gray-100 hover:border-blue-500 hover:bg-blue-50 transition-all text-left">
-                                            <span class="font-bold text-gray-700">${part.name}</span>
-                                            <span class="text-blue-600 font-bold">${part.price.toLocaleString()}원</span>
-                                        </button>
-                                    `;
-                                }).join('')}
-                            </div>
-                        </div>
                     `;
+
+                    // 시리즈 내부의 각 부품들 반복
+                    const partsInSeries = data[series];
+                    Object.keys(partsInSeries).forEach(partKey => {
+                        const part = partsInSeries[partKey];
+                        // 파이썬에서 저장할 때 name과 lprice(또는 price)를 확인해야 함
+                        const price = part.lprice ? parseInt(part.lprice) : (part.price ? parseInt(part.price) : 0);
+                        const category = part.type || "기타"; 
+
+                        html += `
+                            <button onclick="selectPart('${category}', '${part.name.replace(/'/g, "\\'")}', ${price})" 
+                                    class="flex justify-between items-center p-4 rounded-2xl border border-gray-50 hover:border-blue-500 hover:bg-blue-50 transition-all text-left group">
+                                <div class="flex flex-col">
+                                    <span class="text-[10px] font-bold text-gray-400 group-hover:text-blue-400">${category}</span>
+                                    <span class="font-bold text-gray-700 text-sm line-clamp-1">${part.name}</span>
+                                </div>
+                                <span class="text-blue-600 font-bold whitespace-nowrap ml-2">${price.toLocaleString()}원</span>
+                            </button>
+                        `;
+                    });
+
+                    html += `</div></div>`;
                 });
                 container.innerHTML = html;
             });
         }
 
+        // 3. 부품 선택 및 요약 업데이트
         function selectPart(category, name, price) {
             selectedItems[category] = { name, price };
             updateSummary();
@@ -169,11 +144,11 @@
                 total += item.price;
                 return `
                     <div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl">
-                        <div>
+                        <div class="overflow-hidden mr-2">
                             <p class="text-[10px] font-bold text-blue-500 uppercase">${cat}</p>
-                            <p class="text-sm font-bold text-gray-800">${item.name}</p>
+                            <p class="text-sm font-bold text-gray-800 truncate">${item.name}</p>
                         </div>
-                        <span class="text-sm font-bold">${item.price.toLocaleString()}원</span>
+                        <span class="text-sm font-bold whitespace-nowrap">${item.price.toLocaleString()}원</span>
                     </div>
                 `;
             }).join('');
@@ -183,71 +158,16 @@
         }
 
         function openConsultModal() {
-            if (Object.keys(selectedItems).length === 0) return alert("부품을 먼저 선택해주세요.");
-            document.getElementById('consultModal').style.display = 'flex';
+            if (Object.keys(selectedItems).length === 0) return alert("부품을 선택해주세요.");
+            document.getElementById('consultModal').classList.remove('hidden');
+            document.getElementById('consultModal').classList.add('flex');
         }
 
         function closeConsultModal() {
-            document.getElementById('consultModal').style.display = 'none';
+            document.getElementById('consultModal').classList.add('hidden');
         }
 
-        // PDF 생성 함수
-        function generatePDF(data) {
-            document.getElementById('pdf-name').innerText = data.name;
-            document.getElementById('pdf-phone').innerText = data.phone;
-            document.getElementById('pdf-date').innerText = new Date().toLocaleDateString();
-            document.getElementById('pdf-total').innerText = data.totalPrice;
-
-            const itemsTable = document.getElementById('pdf-items');
-            itemsTable.innerHTML = Object.entries(data.items).map(([cat, item]) => `
-                <tr>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee; font-size: 13px;">${cat}</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee; font-size: 13px; font-weight: bold;">${item.name}</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right; font-size: 13px;">${item.price.toLocaleString()}원</td>
-                </tr>
-            `).join('');
-
-            const element = document.getElementById('pdf-template');
-            element.style.display = 'block'; // 생성 중 잠시 보이게 함
-
-            const opt = {
-                margin: 10,
-                filename: `Compatch_견적서_${data.name}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 3 }, // 선명도 조절
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            html2pdf().set(opt).from(element).save().then(() => {
-                element.style.display = 'none';
-            });
-        }
-
-        // 신청 완료 이벤트
-        document.getElementById('consultForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const requestData = {
-                name: document.getElementById('userName').value,
-                phone: document.getElementById('userPhone').value,
-                memo: document.getElementById('userMemo').value,
-                items: selectedItems,
-                totalPrice: document.getElementById('totalDisplay').innerText,
-                type: "견적 상담 신청",
-                timestamp: Date.now()
-            };
-
-            db.ref('requests').push(requestData, (error) => {
-                if (!error) {
-                    generatePDF(requestData); // PDF 다운로드 실행
-                    alert('상담 신청이 완료되었습니다! 견적서 PDF를 다운로드합니다.');
-                    setTimeout(() => location.reload(), 2000);
-                } else {
-                    alert('오류 발생: ' + error.message);
-                }
-            });
-        });
-
+        // 초기화 실행
         window.onload = loadParts;
     </script>
 </body>
