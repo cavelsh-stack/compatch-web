@@ -74,7 +74,8 @@
         </div>
         <button onclick="addUsedItem()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-black hover:bg-green-700 transition-all">중고 품목 등록</button>
         
-        <div id="usedProductList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8"></div>
+        <div id="usedProductList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8 pt-8 border-t border-gray-50">
+            </div>
     </div>
 </section>
 
@@ -204,57 +205,6 @@
             });
         }
 
-// 중고 품목 등록 (경로: used_db)
-function addUsedItem() {
-    const name = document.getElementById('usedName').value;
-    const price = document.getElementById('usedPrice').value;
-    const image = document.getElementById('usedImage').value || 'https://via.placeholder.com/400x300?text=No+Image';
-    
-    if(!name || !price) return alert("제품명과 가격을 입력하세요.");
-
-    db.ref('used_db').push({
-        name: name, 
-        price: parseInt(price), 
-        image: image,
-        timestamp: Date.now()
-    }).then(() => {
-        alert("중고 품목이 등록되었습니다.");
-        document.getElementById('usedName').value = '';
-        document.getElementById('usedPrice').value = '';
-        document.getElementById('usedImage').value = '';
-    });
-}
-
-// 관리자용 중고 리스트 출력
-function loadUsedProductsAdmin() {
-    db.ref('used_db').on('value', (snapshot) => {
-        const data = snapshot.val();
-        const list = document.getElementById('usedProductList');
-        if(!data) {
-            list.innerHTML = '<p class="col-span-full text-center text-gray-400 py-10">등록된 중고 상품이 없습니다.</p>';
-            return;
-        }
-
-        list.innerHTML = Object.keys(data).reverse().map(key => `
-            <div class="bg-gray-50 border border-gray-100 p-4 rounded-2xl">
-                <img src="${data[key].image}" class="w-full h-32 object-cover rounded-xl mb-3 bg-white">
-                <h4 class="font-bold text-sm truncate text-gray-800">${data[key].name}</h4>
-                <p class="text-green-600 font-black text-sm mb-3">${data[key].price.toLocaleString()}원</p>
-                <button onclick="deleteData('used_db', '${key}')" class="w-full py-2 bg-white text-red-500 border border-red-100 rounded-lg text-xs font-bold hover:bg-red-50">삭제</button>
-            </div>
-        `).join('');
-    });
-}
-
-// window.onload 시 호출되도록 설정
-window.onload = () => {
-    if (sessionStorage.getItem("adminLoggedIn")) {
-        loadRequests();
-        loadArchiveAdmin();
-        loadUsedProductsAdmin(); // 관리자 리스트 로드 함수 호출
-    }
-};
-
         // 공통 기능: 삭제, 로그인 등
         function checkAdmin() {
             if(document.getElementById('adminPw').value === "1004") {
@@ -278,6 +228,57 @@ window.onload = () => {
                 document.getElementById('loginModal').classList.add('flex');
             }
         };
+
+// 중고 품목 등록 함수
+function addUsedItem() {
+    const name = document.getElementById('usedName').value;
+    const price = document.getElementById('usedPrice').value;
+    const image = document.getElementById('usedImage').value || 'https://via.placeholder.com/400x300?text=No+Image';
+    
+    if(!name || !price) return alert("제품명과 가격을 입력하세요.");
+
+    db.ref('used_db').push({
+        name: name, 
+        price: parseInt(price), 
+        image: image,
+        timestamp: Date.now()
+    }).then(() => {
+        alert("중고 품목이 등록되었습니다.");
+        document.getElementById('usedName').value = '';
+        document.getElementById('usedPrice').value = '';
+        document.getElementById('usedImage').value = '';
+    });
+}
+
+// [추가] 등록된 중고 품목 리스트 불러오기 (실시간)
+function loadUsedProductsAdmin() {
+    db.ref('used_db').on('value', (snapshot) => {
+        const data = snapshot.val();
+        const list = document.getElementById('usedProductList');
+        if(!data) {
+            list.innerHTML = '<p class="col-span-full text-center text-gray-400 py-10 italic">등록된 내역이 없습니다.</p>';
+            return;
+        }
+
+        list.innerHTML = Object.keys(data).reverse().map(key => `
+            <div class="bg-gray-50 border border-gray-100 p-4 rounded-2xl group">
+                <img src="${data[key].image}" class="w-full h-32 object-cover rounded-xl mb-3 bg-white">
+                <h4 class="font-bold text-sm truncate text-gray-800">${data[key].name}</h4>
+                <p class="text-green-600 font-black text-sm mb-3">${data[key].price.toLocaleString()}원</p>
+                <button onclick="deleteData('used_db', '${key}')" class="w-full py-2 bg-white text-red-500 border border-red-100 rounded-lg text-xs font-bold hover:bg-red-50">삭제</button>
+            </div>
+        `).join('');
+    });
+}
+
+// window.onload 에 추가
+window.onload = () => {
+    if (sessionStorage.getItem("adminLoggedIn")) {
+        loadRequests();      
+        loadArchiveAdmin();  
+        loadUsedProductsAdmin(); // 중고 리스트 로드 추가
+    }
+};
     </script>
 </body>
 </html>
