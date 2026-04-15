@@ -251,14 +251,6 @@ function loadUsedProductsAdmin() {
     });
 }
 
-// window.onload 에 추가
-window.onload = () => {
-    if (sessionStorage.getItem("adminLoggedIn")) {
-        loadRequests();      
-        loadArchiveAdmin();  
-        loadUsedProductsAdmin(); // 중고 리스트 로드 추가
-    }
-};
         // 공통 기능: 삭제, 로그인 등
         function checkAdmin() {
             if(document.getElementById('adminPw').value === "0927") {
