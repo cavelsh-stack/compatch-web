@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>관리자 모드 | Compatch</title>
+    <title>관리자 모드 | Well Design</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -17,9 +17,13 @@
     <nav class="sticky top-0 z-50 bg-white border-b border-gray-100">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <div class="flex items-center gap-8">
-                <a href="index.html" class="text-2xl font-black text-blue-600 tracking-tighter">COMPATCH</a>
+                <a href="index.html" class="text-2xl font-black text-blue-600 tracking-tighter">Well Design</a>
                 <div class="hidden md:flex gap-6 text-sm font-semibold text-gray-600">
                     <a href="index.html" class="hover:text-blue-600">메인으로</a>
+                    <a href="estimate.html" class="hover:text-blue-600">실시간 견적</a>
+                    <a href="trade-in.html" class="hover:text-blue-600">중고 판매</a>
+                    <a href="archive.html" class="hover:text-blue-600">자료실</a>
+                    <a href="admin-list.html" class="hover:text-blue-600">관리자</a>
                 </div>
             </div>
             <button onclick="logout()" class="text-sm font-bold text-red-500 bg-red-50 px-4 py-2 rounded-xl">로그아웃</button>
@@ -64,7 +68,7 @@
 
 <section>
     <h2 class="text-2xl font-black mb-6 flex items-center gap-2">
-        <span class="w-2 h-8 bg-green-600 rounded-full"></span> 중고 매입 DB 관리
+        <span class="w-2 h-8 bg-green-600 rounded-full"></span> 중고 제품 DB 관리
     </h2>
     <div class="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -207,7 +211,7 @@
 
         // 공통 기능: 삭제, 로그인 등
         function checkAdmin() {
-            if(document.getElementById('adminPw').value === "1004") {
+            if(document.getElementById('adminPw').value === "0927") {
                 sessionStorage.setItem("adminLoggedIn", "true");
                 location.reload();
             } else { alert("인증키가 틀렸습니다."); }
