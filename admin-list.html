@@ -29,35 +29,40 @@
     <main class="max-w-7xl mx-auto px-4 py-10 space-y-12">
         
         <section>
-            <h2 class="text-2xl font-black mb-6 flex items-center gap-2">
-                <span class="w-2 h-8 bg-indigo-600 rounded-full"></span> 관리자 판매 상품 관리
-            </h2>
-            <div class="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm mb-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <input type="text" id="prodName" placeholder="상품명 (예: 사무용 조립PC)" class="px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none text-sm">
-                    <input type="number" id="prodPrice" placeholder="판매 가격 (숫자만)" class="px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none text-sm">
-                    <input type="text" id="prodImg" placeholder="이미지 주소(URL)" class="px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none text-sm">
-                </div>
-                <button onclick="addProduct()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black hover:bg-indigo-700 transition-all">판매 상품 등록</button>
-                
-                <div id="productAdminList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-                    </div>
-            </div>
-        </section>
-
-        <hr class="border-gray-200">
-
-        <section>
             <div class="flex justify-between items-end mb-6">
                 <h2 class="text-2xl font-black flex items-center gap-2">
                     <span class="w-2 h-8 bg-blue-600 rounded-full"></span> 고객 견적/판매 신청 내역
                 </h2>
                 <p class="text-sm text-gray-400" id="requestCount">접수 0건</p>
             </div>
-            <div id="requestAdminList" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+            <div id="requestAdminList" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                </div>
         </section>
 
-        </main>
+        <hr class="border-gray-200">
+
+        <section>
+            <h2 class="text-2xl font-black mb-6 flex items-center gap-2">
+                <span class="w-2 h-8 bg-orange-500 rounded-full"></span> 자료실 관리
+            </h2>
+            <div class="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                    <select id="arcCategory" class="px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none text-sm font-bold">
+                        <option>드라이버</option>
+                        <option>매뉴얼</option>
+                        <option>BIOS</option>
+                    </select>
+                    <input type="text" id="arcTitle" placeholder="자료 제목 (예: 인텔 메인보드 칩셋 드라이버)" class="md:col-span-2 px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none text-sm">
+                    <input type="text" id="arcLink" placeholder="다운로드 링크(URL)" class="px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none text-sm">
+                </div>
+                <button onclick="addArchive()" class="w-full bg-orange-500 text-white py-4 rounded-2xl font-black hover:bg-orange-600 transition-all">신규 자료 등록</button>
+                
+                <div id="archiveAdminList" class="grid grid-cols-1 gap-3 mt-8">
+                    </div>
+            </div>
+        </section>
+
+    </main>
 
     <div id="loginModal" class="fixed inset-0 bg-gray-900/90 z-[100] hidden items-center justify-center p-4 backdrop-blur-md">
         <div class="bg-white w-full max-w-sm rounded-[40px] p-10 shadow-2xl text-center">
@@ -72,90 +77,135 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 1. 관리자 판매 상품 등록 (products 노드)
-        function addProduct() {
-            const name = document.getElementById('prodName').value;
-            const price = parseInt(document.getElementById('prodPrice').value);
-            const img = document.getElementById('prodImg').value || "https://images.unsplash.com/photo-1587831990711-23ca6441447b?w=400";
-            
-            if(!name || !price) return alert("상품명과 가격을 입력하세요.");
-
-            db.ref('products').push({ name, price, img, timestamp: Date.now() })
-              .then(() => {
-                  alert("상품이 등록되었습니다.");
-                  document.getElementById('prodName').value = '';
-                  document.getElementById('prodPrice').value = '';
-                  document.getElementById('prodImg').value = '';
-              });
-        }
-
-        function loadProductAdmin() {
-            db.ref('products').on('value', (snapshot) => {
-                const data = snapshot.val();
-                const list = document.getElementById('productAdminList');
-                if(!data) { list.innerHTML = '<p class="text-gray-400 text-xs">등록된 상품 없음</p>'; return; }
-
-                list.innerHTML = Object.keys(data).reverse().map(key => `
-                    <div class="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm">
-                        <img src="${data[key].img}" class="w-full h-32 object-cover rounded-xl mb-3">
-                        <h4 class="font-bold text-sm truncate">${data[key].name}</h4>
-                        <p class="text-indigo-600 font-black mb-3">${data[key].price.toLocaleString()}원</p>
-                        <button onclick="deleteData('products', '${key}')" class="w-full py-2 bg-red-50 text-red-500 rounded-lg text-xs font-bold">삭제</button>
-                    </div>
-                `).join('');
-            });
-        }
-
-        // 2. 고객 견적/판매 내역 로드 (requests 노드)
+        // [복구] 1. 고객 견적/판매 신청 내역 로드 및 상세 부품 표시
         function loadRequests() {
             db.ref('requests').on('value', (snapshot) => {
                 const data = snapshot.val();
                 const list = document.getElementById('requestAdminList');
-                if(!data) { list.innerHTML = '<p class="col-span-full text-center py-10 text-gray-400">내역 없음</p>'; return; }
+                const countText = document.getElementById('requestCount');
+
+                if (!data) {
+                    list.innerHTML = '<p class="col-span-full text-center py-20 text-gray-400 bg-white rounded-[32px] border border-gray-100">접수된 내역이 없습니다.</p>';
+                    countText.innerText = "접수 0건";
+                    return;
+                }
 
                 const keys = Object.keys(data).reverse();
+                countText.innerText = `접수 ${keys.length}건`;
+
                 list.innerHTML = keys.map(key => {
                     const req = data[key];
                     const date = new Date(req.timestamp).toLocaleString();
+                    
+                    // [부품 상세 리스트 생성]
+                    let itemsHtml = '';
+                    if (req.items) {
+                        itemsHtml = Object.entries(req.items).map(([cat, item]) => `
+                            <div class="flex justify-between items-center text-[11px] py-1 border-b border-gray-50 last:border-0">
+                                <span class="text-gray-400 font-bold w-16 shrink-0">${cat}</span>
+                                <span class="flex-1 text-gray-700 truncate px-2 font-medium">${item.name}</span>
+                                <span class="text-blue-600 font-black shrink-0">${item.count}개</span>
+                            </div>
+                        `).join('');
+                    } else {
+                        itemsHtml = '<p class="text-gray-300 text-[11px] text-center py-2">부품 선택 정보가 없습니다.</p>';
+                    }
+
                     return `
-                        <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm">
+                        <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
                             <div class="flex justify-between items-start mb-4">
                                 <div>
-                                    <span class="px-2 py-0.5 bg-blue-600 text-[10px] font-bold text-white rounded mb-2 inline-block">${req.type || '신청'}</span>
-                                    <h3 class="text-lg font-black">${req.name}</h3>
+                                    <span class="px-2 py-0.5 bg-blue-600 text-[10px] font-bold text-white rounded mb-2 inline-block">${req.type || '견적 신청'}</span>
+                                    <h3 class="text-xl font-black text-gray-800">${req.name}</h3>
                                     <p class="text-sm font-bold text-blue-500">${req.phone}</p>
                                 </div>
-                                <button onclick="deleteData('requests', '${key}')" class="text-gray-300 hover:text-red-500">삭제</button>
+                                <button onclick="deleteData('requests', '${key}')" class="text-gray-300 hover:text-red-500 text-sm">삭제</button>
                             </div>
-                            <div class="text-xs text-gray-600 bg-gray-50 p-4 rounded-2xl">
-                                ${req.appliedItem ? `<p class="mb-1 font-bold text-indigo-600">신청상품: ${req.appliedItem}</p>` : ''}
-                                <p class="italic">"${req.memo || '메모 없음'}"</p>
+
+                            <div class="bg-gray-50/50 p-4 rounded-2xl mb-4 border border-gray-100">
+                                <p class="text-[9px] font-bold text-gray-400 mb-2 uppercase tracking-wider">Selected Parts Details</p>
+                                <div class="space-y-0.5">
+                                    ${itemsHtml}
+                                </div>
                             </div>
-                            <p class="text-[10px] text-gray-300 text-right mt-3">${date}</p>
+
+                            <div class="space-y-2 px-1">
+                                <div class="bg-blue-50/50 p-3 rounded-xl">
+                                    <p class="text-[9px] font-bold text-blue-400 mb-1">고객 요청사항</p>
+                                    <p class="text-[11px] text-gray-600 leading-snug">${req.memo || '내용 없음'}</p>
+                                </div>
+                                <div class="flex justify-between items-center pt-2">
+                                    <span class="text-xs font-bold text-gray-400">최종 견적가</span>
+                                    <span class="text-lg font-black text-gray-900">${req.totalPrice || '0원'}</span>
+                                </div>
+                            </div>
+                            <p class="mt-4 text-[9px] text-gray-300 text-right font-medium italic">${date}</p>
                         </div>
                     `;
                 }).join('');
             });
         }
 
-        // 공통 기능 (로그인, 삭제 등)
+        // [복구] 2. 자료실 등록 기능
+        function addArchive() {
+            const category = document.getElementById('arcCategory').value;
+            const title = document.getElementById('arcTitle').value;
+            const link = document.getElementById('arcLink').value;
+            
+            if(!title || !link) return alert("자료 제목과 다운로드 링크를 입력해주세요.");
+
+            db.ref('archives').push({
+                category,
+                title,
+                link,
+                date: new Date().toISOString().split('T')[0]
+            }).then(() => {
+                alert("자료가 등록되었습니다.");
+                document.getElementById('arcTitle').value = '';
+                document.getElementById('arcLink').value = '';
+            });
+        }
+
+        // [복구] 3. 자료실 리스트 로드
+        function loadArchiveAdmin() {
+            db.ref('archives').on('value', (snapshot) => {
+                const data = snapshot.val();
+                const list = document.getElementById('archiveAdminList');
+                if(!data) {
+                    list.innerHTML = '<p class="text-center py-10 text-gray-400 text-sm italic">등록된 자료가 없습니다.</p>';
+                    return;
+                }
+
+                list.innerHTML = Object.keys(data).reverse().map(key => `
+                    <div class="flex justify-between items-center bg-gray-50 p-4 rounded-2xl border border-gray-100 group">
+                        <div class="flex items-center gap-4">
+                            <span class="text-[10px] font-bold px-2 py-1 bg-white border border-gray-200 rounded text-gray-500">${data[key].category}</span>
+                            <span class="text-sm font-bold text-gray-700">${data[key].title}</span>
+                        </div>
+                        <button onclick="deleteData('archives', '${key}')" class="text-xs font-bold text-red-400 opacity-0 group-hover:opacity-100 transition-all hover:underline">삭제</button>
+                    </div>
+                `).join('');
+            });
+        }
+
+        // 공통 기능: 삭제, 로그인 등
         function checkAdmin() {
             if(document.getElementById('adminPw').value === "1004") {
                 sessionStorage.setItem("adminLoggedIn", "true");
                 location.reload();
-            } else { alert("인증키 오류"); }
+            } else { alert("인증키가 틀렸습니다."); }
         }
 
         function deleteData(node, key) {
-            if(confirm('삭제하시겠습니까?')) db.ref(node).child(key).remove();
+            if(confirm('데이터를 영구히 삭제하시겠습니까?')) db.ref(node).child(key).remove();
         }
 
         function logout() { sessionStorage.removeItem("adminLoggedIn"); location.reload(); }
 
         window.onload = () => {
             if (sessionStorage.getItem("adminLoggedIn")) {
-                loadProductAdmin(); // 관리자 상품 관리 로드
-                loadRequests();     // 고객 신청 내역 로드
+                loadRequests();      // 견적/판매 신청 내역 (부품 상세 포함)
+                loadArchiveAdmin();  // 자료실 리스트
             } else {
                 document.getElementById('loginModal').classList.remove('hidden');
                 document.getElementById('loginModal').classList.add('flex');
