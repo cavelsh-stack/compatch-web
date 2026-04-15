@@ -2,153 +2,126 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>관리자 모드 | Compatch</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 </head>
-<body class="bg-gray-50 flex h-screen overflow-hidden">
+<body class="bg-gray-100">
 
-    <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col">
-        <div class="p-6 text-white text-2xl font-black tracking-tighter border-b border-slate-800">
-            COMPATCH <span class="text-xs text-blue-500 font-normal">ADMIN</span>
+    <div id="loginSection" class="fixed inset-0 bg-gray-900 flex items-center justify-center z-[200]">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center">
+            <h2 class="text-2xl font-black mb-6">관리자 인증</h2>
+            <input type="password" id="adminPassword" placeholder="암호를 입력하세요" 
+                   class="w-full px-4 py-3 border rounded-xl mb-4 text-center outline-none focus:ring-2 focus:ring-blue-500">
+            <button onclick="checkPassword()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700">로그인</button>
         </div>
-        <nav class="flex-1 p-4 space-y-2">
-            <a href="#" class="flex items-center gap-3 p-3 rounded-lg bg-blue-600 text-white font-bold">
-                📊 대시보드
-            </a>
-            <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-800 transition">
-                🖥️ 견적 상담 관리
-            </a>
-            <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-800 transition">
-                💰 중고 매입 관리
-            </a>
-            <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-800 transition">
-                ⚙️ 가격/마진 설정
-            </a>
+    </div>
+
+    <div id="adminMain" class="hidden">
+        <nav class="bg-white border-b px-6 py-4 flex justify-between items-center sticky top-0 z-50">
+            <h1 class="text-xl font-black text-blue-600">COMPATCH ADMIN</h1>
+            <button onclick="logout()" class="text-sm font-bold text-red-500 bg-red-50 px-4 py-2 rounded-lg hover:bg-red-100">로그아웃</button>
         </nav>
-        <div class="p-4 border-t border-slate-800 text-xs text-slate-500">
-            마지막 로그인: 2026-04-13 17:10
-        </div>
-    </aside>
 
-    <main class="flex-1 flex flex-col overflow-hidden">
-        
-        <header class="h-16 bg-white border-b flex items-center justify-between px-8">
-            <h2 class="text-xl font-bold">전체 신청 내역</h2>
-            <div class="flex items-center gap-4">
-                <span class="text-sm text-gray-500 font-medium">관리자(Lee Sang-ho)님 환영합니다.</span>
-                <button class="text-xs bg-gray-100 px-3 py-1 rounded hover:bg-gray-200">로그아웃</button>
-            </div>
-        </header>
+        <main class="max-w-7xl mx-auto p-6">
+            <h2 class="text-2xl font-bold mb-6">견적 상담 신청 내역</h2>
+            <div id="requestList" class="grid gap-6">
+                </div>
+        </main>
+    </div>
 
-        <section class="p-8 overflow-y-auto">
-            
-            <div class="flex gap-4 mb-6">
-                <button class="px-4 py-2 bg-white border rounded-lg text-sm font-bold shadow-sm">전체</button>
-                <button class="px-4 py-2 bg-white border rounded-lg text-sm text-gray-500 hover:bg-gray-50">상담 신청</button>
-                <button class="px-4 py-2 bg-white border rounded-lg text-sm text-gray-500 hover:bg-gray-50">매입 신청</button>
-            </div>
+    <script>
+        // Firebase 설정 (기존 설정과 동일하게 유지)
+        const firebaseConfig = {
+            authDomain: "compatch-e7305.firebaseapp.com",
+            databaseURL: "https://compatch-e7305-default-rtdb.asia-southeast1.firebasedatabase.app/",
+            projectId: "compatch-e7305"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <table class="w-full text-left border-collapse">
-                    <thead class="bg-gray-50 border-b">
-                        <tr>
-                            <th class="p-4 text-xs font-bold text-gray-500 uppercase">분류</th>
-                            <th class="p-4 text-xs font-bold text-gray-500 uppercase">신청자</th>
-                            <th class="p-4 text-xs font-bold text-gray-500 uppercase">연락처</th>
-                            <th class="p-4 text-xs font-bold text-gray-500 uppercase">내용 요약</th>
-                            <th class="p-4 text-xs font-bold text-gray-500 uppercase">금액</th>
-                            <th class="p-4 text-xs font-bold text-gray-500 uppercase">상태</th>
-                            <th class="p-4 text-xs font-bold text-gray-500 uppercase">신청일</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        <tr class="hover:bg-gray-50 transition cursor-pointer">
-                            <td class="p-4">
-                                <span class="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase">견적 상담</span>
-                            </td>
-                            <td class="p-4 font-bold text-sm text-gray-700">홍길동</td>
-                            <td class="p-4 text-sm text-gray-600">010-1234-5678</td>
-                            <td class="p-4 text-sm text-gray-500 truncate max-w-[200px]">i5-14400F / RTX 4060 Ti 외 5건</td>
-                            <td class="p-4 text-sm font-bold text-gray-900 text-right">1,245,000원</td>
-                            <td class="p-4">
-                                <span class="text-orange-500 font-bold text-xs">● 접수대기</span>
-                            </td>
-                            <td class="p-4 text-xs text-gray-400">14:20:05</td>
-                        </tr>
-
-                        <tr class="hover:bg-gray-50 transition cursor-pointer">
-                            <td class="p-4">
-                                <span class="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase">매입 신청</span>
-                            </td>
-                            <td class="p-4 font-bold text-sm text-gray-700">김철수</td>
-                            <td class="p-4 text-sm text-gray-600">010-9876-5432</td>
-                            <td class="p-4 text-sm text-gray-500 truncate max-w-[200px]">노트북 (RTX 30 시리즈) / S급</td>
-                            <td class="p-4 text-sm font-bold text-gray-900 text-right">650,000원</td>
-                            <td class="p-4">
-                                <span class="text-blue-500 font-bold text-xs">● 상담완료</span>
-                            </td>
-                            <td class="p-4 text-xs text-gray-400">11:05:30</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="flex justify-center mt-8 gap-2">
-                <button class="w-8 h-8 flex items-center justify-center rounded border bg-white text-blue-600 font-bold shadow-sm">1</button>
-                <button class="w-8 h-8 flex items-center justify-center rounded border bg-white text-gray-400 hover:text-gray-600 transition">2</button>
-                <button class="w-8 h-8 flex items-center justify-center rounded border bg-white text-gray-400 hover:text-gray-600 transition">3</button>
-            </div>
-
-        </section>
-    </main>
-<script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
-
-<script>
-  const firebaseConfig = {
-    databaseURL: "https://compatch-e7305-default-rtdb.asia-southeast1.firebasedatabase.app/"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-</script>
-<script>
-    const listBody = document.querySelector('tbody');
-
-    // Firebase에서 데이터 읽어오기 (최신순)
-    db.ref('requests').orderByChild('timestamp').on('value', (snapshot) => {
-        listBody.innerHTML = ''; // 테이블 초기화
-        
-        const data = snapshot.val();
-        if (data) {
-            // 데이터를 배열로 변환 후 역순 정렬 (최신순)
-            const sortedKeys = Object.keys(data).reverse();
-            
-            sortedKeys.forEach(key => {
-                const item = data[key];
-                const date = new Date(item.timestamp).toLocaleString();
-                const typeColor = item.type === "상담 신청" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700";
-
-                const tr = `
-                    <tr class="hover:bg-gray-50 border-b transition">
-                        <td class="p-4"><span class="${typeColor} text-[10px] font-bold px-2 py-1 rounded-full">${item.type}</span></td>
-                        <td class="p-4 font-bold text-sm text-gray-700">${item.name}</td>
-                        <td class="p-4 text-sm text-gray-600">${item.phone}</td>
-                        <td class="p-4 text-sm text-gray-500">${item.memo || item.device || '내역 없음'}</td>
-                        <td class="p-4 text-sm font-bold text-gray-900 text-right">${item.price || item.totalPrice}</td>
-                        <td class="p-4 text-xs text-gray-400">${date}</td>
-                    </tr>
-                `;
-                listBody.innerHTML += tr;
-            });
-        } else {
-            listBody.innerHTML = '<tr><td colspan="6" class="p-10 text-center text-gray-400">신청 내역이 없습니다.</td></tr>';
+        // 1. 로그인 로직
+        function checkPassword() {
+            const pw = document.getElementById('adminPassword').value;
+            if (pw === "0927") {
+                sessionStorage.setItem("adminLoggedIn", "true"); // 세션에 로그인 상태 저장
+                showAdminPage();
+            } else {
+                alert("암호가 틀렸습니다.");
+            }
         }
-    });
-</script>
+
+        function showAdminPage() {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('adminMain').classList.remove('hidden');
+            loadRequests();
+        }
+
+        function logout() {
+            sessionStorage.removeItem("adminLoggedIn");
+            location.reload(); // 새로고침하여 로그인 화면으로 이동
+        }
+
+        // 페이지 로드 시 로그인 상태 확인
+        window.onload = function() {
+            if (sessionStorage.getItem("adminLoggedIn") === "true") {
+                showAdminPage();
+            }
+        };
+
+        // 2. 데이터 로드 로직 (물품 정보 포함)
+        function loadRequests() {
+            const listContainer = document.getElementById('requestList');
+            
+            db.ref('requests').orderByChild('timestamp').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (!data) {
+                    listContainer.innerHTML = '<p class="text-gray-400">신청 내역이 없습니다.</p>';
+                    return;
+                }
+
+                const html = Object.keys(data).reverse().map(key => {
+                    const req = data[key];
+                    // 물품 리스트를 HTML 문자열로 생성
+                    const itemsHtml = req.items ? req.items.map(item => `
+                        <div class="flex justify-between text-xs border-b border-gray-50 py-2">
+                            <span class="text-gray-600">${item.name} (${item.quantity}개)</span>
+                            <span class="font-bold">${(item.price * item.quantity).toLocaleString()}원</span>
+                        </div>
+                    `).join('') : '<p class="text-red-400 text-xs">물품 정보 없음</p>';
+
+                    return `
+                        <div class="bg-white rounded-2xl shadow-sm border p-6 flex flex-col md:flex-row gap-6">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="px-2 py-1 bg-blue-100 text-blue-600 text-[10px] font-bold rounded">${new Date(req.timestamp).toLocaleString()}</span>
+                                    <h3 class="font-black text-lg">${req.name} <span class="text-sm font-normal text-gray-500">(${req.phone})</span></h3>
+                                </div>
+                                <p class="text-gray-600 text-sm mb-4">${req.memo || '메모 없음'}</p>
+                                <div class="bg-gray-50 p-4 rounded-xl">
+                                    <p class="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">신청 물품 리스트</p>
+                                    ${itemsHtml}
+                                </div>
+                            </div>
+                            <div class="w-full md:w-48 flex flex-col justify-center items-end border-t md:border-t-0 md:border-l pt-4 md:pt-0 md:pl-6">
+                                <p class="text-gray-400 text-xs mb-1">최종 견적가</p>
+                                <p class="text-xl font-black text-blue-600">${req.totalPrice}</p>
+                                <button onclick="deleteRequest('${key}')" class="mt-4 text-xs text-red-400 hover:text-red-600 underline">내역 삭제</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                listContainer.innerHTML = html;
+            });
+        }
+
+        function deleteRequest(key) {
+            if(confirm('이 내역을 삭제하시겠습니까?')) {
+                db.ref('requests').child(key).remove();
+            }
+        }
+    </script>
 </body>
 </html>
