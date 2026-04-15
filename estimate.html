@@ -212,10 +212,41 @@
             itemCount.innerText = `${selectedItems.length}종`;
         }
 
+        // 4. 모달 및 폼 제출
+        function openConsultModal() {
+            if (selectedItems.length === 0) return alert("부품을 먼저 선택해주세요.");
+            document.getElementById('modalTotalPrice').innerText = document.getElementById('totalDisplay').innerText;
+            document.getElementById('consultModal').classList.remove('hidden');
+            document.getElementById('consultModal').classList.add('flex');
+        }
+
+        function closeConsultModal() {
+            document.getElementById('consultModal').classList.remove('flex');
+            document.getElementById('consultModal').classList.add('hidden');
+        }
+
+        document.getElementById('consultForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const requestData = {
+                name: document.getElementById('userName').value,
+                phone: document.getElementById('userPhone').value,
+                memo: document.getElementById('userMemo').value,
+                items: selectedItems,
+                totalPrice: document.getElementById('totalDisplay').innerText,
+                type: "상담 신청",
+                timestamp: Date.now()
+            };
+
+            db.ref('requests').push(requestData, (error) => {
+                if (!error) {
+                    alert('견적 상담 신청이 완료되었습니다. 확인 후 연락드리겠습니다.');
+                    location.reload();
+                }
+            });
+        });
+
         // 초기 실행
-        window.onload = function() {
-            loadParts();
-        };
+        window.onload = loadParts;
     </script>
 </body>
 </html>
