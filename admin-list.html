@@ -404,35 +404,56 @@ function resetPartForm() {
 
 // 4. 관리자 페이지에 등록된 부품 리스트 출력
 function loadPartsAdmin() {
-    const list = document.getElementById('adminPartList');
-    if(!list) return;
+    const container = document.getElementById('adminPartsList');
+    if(!container) return;
 
     db.ref('parts_db').on('value', (snapshot) => {
         const data = snapshot.val();
-        if(!data) { 
-            list.innerHTML = '<p class="text-center text-gray-400 py-10">등록된 부품이 없습니다.</p>'; 
-            return; 
+        if(!data) {
+            container.innerHTML = `<div class="text-center py-10 text-gray-400">등록된 부품이 없습니다.</div>`;
+            return;
         }
 
-        list.innerHTML = Object.keys(data).reverse().map(key => {
-            const item = data[key];
+        const parts = Object.entries(data);
+        container.innerHTML = parts.map(([key, item]) => {
+            // 수정을 위해 데이터를 문자열로 변환 (따옴표 오류 방지)
             const dataJson = encodeURIComponent(JSON.stringify(item));
-return `
-    <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-gray-100 mb-3 group shadow-sm">
-        <div class="flex items-center gap-4">
-            <img src="${item.image || 'https://via.placeholder.com/50'}" class="w-12 h-12 object-cover rounded-lg bg-gray-50">
-            <div>
-                <p class="text-[10px] font-bold text-blue-600">${item.category}</p>
-                <p class="font-bold text-gray-800">${item.name}</p>
-                <p class="text-[10px] text-gray-400 line-clamp-1">${item.description || item.desc || '설명 없음'}</p>
-                <p class="text-xs text-blue-500 font-bold">${Number(item.price).toLocaleString()}원</p>
-            </div>
-        </div>
-        ...
-    </div>
-`;
+            
+            return `
+                <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-gray-100 mb-3 group shadow-sm hover:border-blue-500 transition-all">
+                    <div class="flex items-center gap-4">
+                        <img src="${item.image || 'https://via.placeholder.com/50'}" class="w-12 h-12 object-cover rounded-lg bg-gray-50">
+                        <div>
+                            <p class="text-[10px] font-bold text-blue-600 uppercase">${item.category}</p>
+                            <p class="font-bold text-gray-800">${item.name}</p>
+                            <p class="text-[10px] text-gray-400 line-clamp-1">${item.description || item.desc || '설명 없음'}</p>
+                            <p class="text-xs text-blue-500 font-bold">${Number(item.price).toLocaleString()}원</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <button onclick="editPart('${key}', '${dataJson}')" 
+                                class="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition-all">
+                            수정
+                        </button>
+                        <button onclick="deletePart('${key}')" 
+                                class="px-3 py-1.5 bg-gray-100 text-red-500 rounded-lg text-xs font-bold hover:bg-red-600 hover:text-white transition-all">
+                            삭제
+                        </button>
+                    </div>
+                </div>
+            `;
         }).join('');
     });
+}
+
+// [참고] 삭제 함수가 없다면 아래 내용도 추가하세요
+function deletePart(key) {
+    if(confirm("정말로 이 부품을 삭제하시겠습니까?")) {
+        db.ref('parts_db').child(key).remove()
+            .then(() => alert("삭제되었습니다."))
+            .catch((error) => alert("삭제 실패: " + error.message));
+    }
 }
 
 // window.onload 에 추가
