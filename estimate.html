@@ -123,35 +123,35 @@
 
 function loadParts() {
     const container = document.getElementById('parts-container');
-    
-    // Firebase의 parts_db 경로를 실시간 감시
+    if (!container) return;
+
+    // Firebase DB 실시간 감시
     db.ref('parts_db').on('value', (snapshot) => {
         const data = snapshot.val();
         
         if (!data) {
             container.innerHTML = `
-                <div class="col-span-full text-center py-20">
-                    <p class="text-gray-400 font-bold">등록된 부품 데이터가 없습니다.</p>
-                    <p class="text-sm text-gray-300">관리자 페이지에서 부품을 먼저 등록해주세요.</p>
+                <div class="col-span-full text-center py-20 bg-white rounded-[40px] border border-dashed">
+                    <p class="text-gray-400 font-bold">등록된 부품이 없습니다.</p>
+                    <p class="text-sm text-gray-300">관리자 페이지에서 부품을 등록해 주세요.</p>
                 </div>`;
             return;
         }
 
-        // 카테고리 순서 정의
         const categories = ["CPU", "메인보드", "메모리", "그래픽카드", "SSD/HDD", "케이스", "파워", "쿨러"];
-        const allItems = Object.values(data);
+        const allItems = Object.entries(data); // ID(key)를 포함하여 가져옴
 
         container.innerHTML = categories.map(cat => {
-            const catParts = allItems.filter(item => item.category === cat);
-            if (catParts.length === 0) return ''; // 해당 카테고리에 상품이 없으면 표시 안 함
+            const catParts = allItems.filter(([key, item]) => item.category === cat);
+            if (catParts.length === 0) return '';
 
             return `
                 <div class="mb-12 col-span-full">
-                    <h3 class="text-xl font-black mb-6 flex items-center gap-2">
-                        <span class="w-1.5 h-6 bg-gray-900 rounded-full"></span> ${cat}
+                    <h3 class="text-xl font-black mb-6 flex items-center gap-2 uppercase tracking-tighter">
+                        <span class="w-1.5 h-6 bg-blue-600 rounded-full"></span> ${cat}
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        ${catParts.map(item => `
+                        ${catParts.map(([key, item]) => `
                             <div onclick="selectItem('${cat}', '${item.name}', ${item.price}, '${item.image}')" 
                                  class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm hover:border-blue-500 hover:shadow-md transition-all cursor-pointer group">
                                 <div class="flex items-center gap-4">
@@ -159,7 +159,7 @@ function loadParts() {
                                     <div class="flex-1 min-w-0">
                                         <h4 class="font-bold text-gray-800 truncate">${item.name}</h4>
                                         <p class="text-blue-600 font-black">${Number(item.price).toLocaleString()}원</p>
-                                        <p class="text-[10px] text-gray-400">${item.desc || ''}</p>
+                                        <p class="text-[10px] text-gray-400 truncate">${item.desc || ''}</p>
                                     </div>
                                 </div>
                             </div>
