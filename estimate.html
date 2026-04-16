@@ -35,23 +35,22 @@
                 <div class="text-center py-20 text-gray-400">상품 정보를 불러오는 중입니다...</div>
             </div>
 
-            <div class="w-full lg:w-96">
-                <div class="sticky-summary bg-white p-6 rounded-3xl shadow-xl border border-gray-100">
-                    <h2 class="text-xl font-black mb-6">견적 요약</h2>
-                    
-                    <div class="mb-4 p-4 bg-blue-50 rounded-2xl border border-blue-100">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <p class="text-[10px] font-bold text-blue-600 uppercase">Service</p>
-                                <p class="text-sm font-bold text-gray-800">조립 및 1년 출장 A/S</p>
-                            </div>
-                            <span class="text-sm font-black text-blue-600">100,000원</span>
-                        </div>
-                    </div>
+<div class="w-full lg:w-96">
+    <div class="sticky-summary bg-white p-6 rounded-3xl shadow-xl border border-gray-100">
+        <h2 class="text-xl font-black mb-6">견적 요약</h2>
+        
+        <div class="mb-4 p-4 bg-blue-50 rounded-2xl border border-blue-100 flex items-center gap-3 cursor-pointer" onclick="toggleAssembly()">
+            <input type="checkbox" id="assemblyCheck" class="w-5 h-5 accent-blue-600" onchange="updateSummary()">
+            <div class="flex-1">
+                <p class="text-[10px] font-bold text-blue-600 uppercase">Option</p>
+                <p class="text-sm font-bold text-gray-800">조립 및 1년 출장 A/S</p>
+            </div>
+            <span class="text-sm font-black text-blue-600">100,000원</span>
+        </div>
 
-                    <div id="selectedSummary" class="space-y-4 mb-8 max-h-[40vh] overflow-y-auto no-scrollbar">
-                        <p class="text-gray-400 text-sm text-center py-10">선택된 부품이 없습니다.</p>
-                    </div>
+        <div id="selectedSummary" class="space-y-4 mb-8 max-h-[40vh] overflow-y-auto no-scrollbar">
+            <p class="text-gray-400 text-sm text-center py-10">선택된 부품이 없습니다.</p>
+        </div>
 
                     <div class="pt-6 border-t border-gray-100">
                         <div class="flex justify-between items-end mb-6">
@@ -121,49 +120,46 @@
         let selectedItems = {};
         const ASSEMBLY_FEE = 100000; // 조립비 고정값
 
-function loadParts() {
-    const container = document.getElementById('parts-container');
-    
-    // 로딩 메시지
-    container.innerHTML = '<div class="col-span-full text-center py-20 text-gray-400 font-bold">부품 데이터를 동기화 중입니다...</div>';
+// 조립 옵션 클릭 시 체크박스 토글
+function toggleAssembly() {
+    const check = document.getElementById('assemblyCheck');
+    check.checked = !check.checked;
+    updateSummary();
+}
 
-    // Firebase DB 실시간 연결
+function loadParts() {
+    // ID를 'parts-container'로 맞춤
+    const container = document.getElementById('parts-container');
+    if(!container) return;
+
     db.ref('parts_db').on('value', (snapshot) => {
         const data = snapshot.val();
-        
         if (!data) {
-            container.innerHTML = `
-                <div class="col-span-full text-center py-20 bg-white rounded-[40px] border-2 border-dashed border-gray-100">
-                    <p class="text-gray-400 font-bold text-lg">DB에 등록된 부품이 없습니다.</p>
-                    <p class="text-sm text-gray-300 mt-2">관리자 페이지에서 부품을 먼저 등록해 주세요.</p>
-                </div>`;
+            container.innerHTML = `<div class="col-span-full text-center py-20 bg-white rounded-[40px] border-2 border-dashed border-gray-100">등록된 부품이 없습니다.</div>`;
             return;
         }
 
         const categories = ["CPU", "메인보드", "메모리", "그래픽카드", "SSD/HDD", "케이스", "파워", "쿨러"];
-        const allItems = Object.values(data);
+        const allItems = Object.entries(data); // key 포함 정보를 위해 entries 사용
 
         container.innerHTML = categories.map(cat => {
-            const catParts = allItems.filter(item => item.category === cat);
+            const catParts = allItems.filter(([key, item]) => item.category === cat);
             if (catParts.length === 0) return '';
 
             return `
-                <div class="mb-12 col-span-full">
-                    <h3 class="text-xl font-black mb-6 flex items-center gap-2 uppercase tracking-tighter">
+                <div class="mb-12">
+                    <h3 class="text-xl font-black mb-6 flex items-center gap-2 uppercase">
                         <span class="w-1.5 h-6 bg-blue-600 rounded-full"></span> ${cat}
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        ${catParts.map(item => `
-                            <div onclick="selectItem('${cat}', '${item.name}', ${item.price}, '${item.image}')" 
+                        ${catParts.map(([key, item]) => `
+                            <div onclick="selectPart('${cat}', '${item.name}', ${item.price})" 
                                  class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm hover:border-blue-500 hover:shadow-md transition-all cursor-pointer group">
                                 <div class="flex items-center gap-5">
-                                    <div class="w-20 h-20 bg-gray-50 rounded-2xl overflow-hidden flex-shrink-0">
-                                        <img src="${item.image || 'https://via.placeholder.com/150'}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                                    </div>
+                                    <img src="${item.image || 'https://via.placeholder.com/150'}" class="w-20 h-20 object-cover rounded-2xl bg-gray-50">
                                     <div class="flex-1 min-w-0">
                                         <h4 class="font-bold text-gray-800 text-lg truncate">${item.name}</h4>
                                         <p class="text-blue-600 font-black text-xl mt-1">${Number(item.price).toLocaleString()}원</p>
-                                        <p class="text-[11px] text-gray-400 mt-1 line-clamp-1">${item.desc || '상세설명 없음'}</p>
                                     </div>
                                 </div>
                             </div>
@@ -175,54 +171,37 @@ function loadParts() {
     });
 }
 
-        function selectPart(category, name, price) {
-            if (selectedItems[category] && selectedItems[category].name === name) {
-                selectedItems[category].count++;
-            } else {
-                selectedItems[category] = { name, price, count: 1 };
-            }
-            updateSummary();
-        }
-
-        function updateCount(category, delta) {
-            if (!selectedItems[category]) return;
-            selectedItems[category].count += delta;
-            if (selectedItems[category].count <= 0) delete selectedItems[category];
-            updateSummary();
-        }
-
-        function updateSummary() {
-            const summary = document.getElementById('selectedSummary');
-            const totalDisplay = document.getElementById('totalDisplay');
-            let total = ASSEMBLY_FEE; // 기본값 10만원 시작
-            
-            let html = Object.entries(selectedItems).map(([cat, item]) => {
-                const itemTotal = item.price * item.count;
-                total += itemTotal;
-                return `
-                    <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 space-y-2">
-                        <div class="flex justify-between items-start">
-                            <div class="overflow-hidden">
-                                <p class="text-[10px] font-bold text-blue-500 uppercase">${cat}</p>
-                                <p class="text-sm font-bold text-gray-800 truncate">${item.name}</p>
-                            </div>
-                            <button onclick="updateCount('${cat}', -${item.count})" class="text-gray-300 hover:text-red-500">✕</button>
-                        </div>
-                        <div class="flex justify-between items-center pt-2 border-t border-gray-200/50">
-                            <div class="flex items-center gap-3 bg-white px-3 py-1 rounded-lg border border-gray-200">
-                                <button onclick="updateCount('${cat}', -1)" class="text-lg font-bold text-gray-400 hover:text-blue-600">-</button>
-                                <span class="text-sm font-black w-4 text-center">${item.count}</span>
-                                <button onclick="updateCount('${cat}', 1)" class="text-lg font-bold text-gray-400 hover:text-blue-600">+</button>
-                            </div>
-                            <span class="text-sm font-black text-gray-900">${itemTotal.toLocaleString()}원</span>
-                        </div>
+function updateSummary() {
+    const summary = document.getElementById('selectedSummary');
+    const totalDisplay = document.getElementById('totalDisplay');
+    const isAssemblyChecked = document.getElementById('assemblyCheck').checked;
+    
+    let total = isAssemblyChecked ? ASSEMBLY_FEE : 0;
+    
+    let html = Object.entries(selectedItems).map(([cat, item]) => {
+        const itemTotal = item.price * item.count;
+        total += itemTotal;
+        return `
+            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                <div class="flex justify-between items-start mb-2">
+                    <p class="text-sm font-bold text-gray-800 truncate">${item.name}</p>
+                    <button onclick="updateCount('${cat}', -${item.count})" class="text-gray-300">✕</button>
+                </div>
+                <div class="flex justify-between items-center">
+                    <div class="flex gap-2">
+                        <button onclick="updateCount('${cat}', -1)" class="w-6 h-6 bg-white rounded border">-</button>
+                        <span class="font-bold">${item.count}</span>
+                        <button onclick="updateCount('${cat}', 1)" class="w-6 h-6 bg-white rounded border">+</button>
                     </div>
-                `;
-            }).join('');
+                    <span class="text-sm font-black">${itemTotal.toLocaleString()}원</span>
+                </div>
+            </div>
+        `;
+    }).join('');
 
-            summary.innerHTML = html || '<p class="text-gray-400 text-sm text-center py-10">부품을 선택하면 견적이 계산됩니다.</p>';
-            totalDisplay.innerText = total.toLocaleString() + '원';
-        }
+    summary.innerHTML = html || '<p class="text-gray-400 text-sm text-center py-10">부품을 선택해 주세요.</p>';
+    totalDisplay.innerText = total.toLocaleString() + '원';
+}
 
         function generatePDF(data) {
             document.getElementById('pdf-name').innerText = data.name;
@@ -243,14 +222,19 @@ function loadParts() {
             `).join('');
 
             // 조립비 행 추가
-            rows += `
-                <tr style="background-color: #f0f7ff;">
-                    <td style="padding: 12px; border-bottom: 1px solid #eee; font-size: 12px; color: #2563eb;">Service</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee; font-size: 12px; font-weight: bold; color: #2563eb;">조립 및 1년 출장 A/S</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-size: 12px;">1</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right; font-size: 12px; font-weight: bold; color: #2563eb;">100,000원</td>
-                </tr>
-            `;
+const isAssemblyChecked = document.getElementById('assemblyCheck').checked;
+
+    let rows = Object.entries(data.items).map(([cat, item]) => `...`).join('');
+
+    if (isAssemblyChecked) {
+        rows += `
+            <tr style="background-color: #f0f7ff;">
+                <td style="padding: 12px; border-bottom: 1px solid #eee;">Service</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">조립 및 1년 출장 A/S</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">1</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold; color: #2563eb;">100,000원</td>
+            </tr>`;
+    }
 
             itemsTable.innerHTML = rows;
 
@@ -265,6 +249,19 @@ function loadParts() {
             }).from(element).save().then(() => { element.style.display = 'none'; });
         }
 
+const isAssemblyChecked = document.getElementById('assemblyCheck').checked;
+
+    let rows = Object.entries(data.items).map(([cat, item]) => `...`).join('');
+
+    if (isAssemblyChecked) {
+        rows += `
+            <tr style="background-color: #f0f7ff;">
+                <td style="padding: 12px; border-bottom: 1px solid #eee;">Service</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: bold;">조립 및 1년 출장 A/S</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">1</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold; color: #2563eb;">100,000원</td>
+            </tr>`;
+    }
         document.getElementById('consultForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const requestData = {
