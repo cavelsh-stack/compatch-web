@@ -330,24 +330,31 @@ function addPartItem() {
 
 // 등록된 부품 관리 리스트 출력
 function loadPartsAdmin() {
+    const list = document.getElementById('adminPartList');
+    if (!list) return;
+
     db.ref('parts_db').on('value', (snapshot) => {
         const data = snapshot.val();
-        const list = document.getElementById('adminPartList');
-        if(!data) { list.innerHTML = '<p class="text-center text-gray-400 py-4">등록된 부품이 없습니다.</p>'; return; }
+        if (!data) {
+            list.innerHTML = '<p class="text-center text-gray-400 py-4">등록된 부품이 없습니다.</p>';
+            return;
+        }
 
-        list.innerHTML = Object.keys(data).reverse().map(key => `
-            <div class="flex items-center justify-between bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                <div class="flex items-center gap-4">
-                    <span class="text-[10px] font-black px-2 py-1 bg-blue-100 text-blue-600 rounded">${data[key].category}</span>
-                    <span class="font-bold text-gray-800">${data[key].name}</span>
-                    <span class="text-xs text-gray-400">${data[key].price.toLocaleString()}원 (재고:${data[key].stock})</span>
+        list.innerHTML = Object.keys(data).reverse().map(key => {
+            const p = data[key];
+            return `
+                <div class="flex items-center justify-between bg-gray-50 p-4 rounded-2xl border border-gray-100 mb-2">
+                    <div class="flex items-center gap-4">
+                        <span class="text-[10px] font-black px-2 py-1 bg-blue-100 text-blue-600 rounded">${p.category}</span>
+                        <span class="font-bold text-gray-800">${p.name}</span>
+                        <span class="text-xs text-gray-400">${Number(p.price).toLocaleString()}원</span>
+                    </div>
+                    <button onclick="deleteData('parts_db', '${key}')" class="text-red-400 text-xs font-bold hover:underline">삭제</button>
                 </div>
-                <button onclick="deleteData('parts_db', '${key}')" class="text-red-400 text-xs font-bold hover:underline">삭제</button>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     });
 }
-
 // window.onload 에 추가
 window.onload = () => {
     if (sessionStorage.getItem("adminLoggedIn")) {
@@ -412,6 +419,7 @@ window.onload = () => {
             if(typeof loadRequests === 'function') loadRequests();
             if(typeof loadArchiveAdmin === 'function') loadArchiveAdmin();
             if(typeof loadUsedProductsAdmin === 'function') loadUsedProductsAdmin();
+            loadPartsAdmin();
         } else {
             // 로그인 안 되어 있으면 강제로 로그인 모달 표시
             showLoginModal();
