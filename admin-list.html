@@ -128,7 +128,7 @@
             <input type="text" id="partImage" placeholder="이미지 URL" class="px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none text-sm">
         </div>
     <div class="md:col-span-2">
-<input type="text" id="partDesc" rows="8" placeholder="상세 설명 " class="px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none text-sm">
+<input type="text" id="partDesc" placeholder="상세 설명 " class="px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none text-sm">
         </div>
         <button onclick="addPartItem()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black hover:bg-blue-700 transition-all">부품 데이터 등록</button>
         
@@ -150,8 +150,6 @@
         const firebaseConfig = { databaseURL: "https://compatch-e7305-default-rtdb.asia-southeast1.firebasedatabase.app/" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-
-let editingPartKey = null;
 
         // [복구] 1. 고객 견적/판매 신청 내역 로드 및 상세 부품 표시
         function loadRequests() {
@@ -308,6 +306,8 @@ function loadUsedProductsAdmin() {
 }
 
 // 부품 등록 로직
+
+let editingPartKey = null;
 
 // 1. 부품 저장 (등록 및 수정 공용)
 function savePartItem() {
