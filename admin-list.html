@@ -17,7 +17,7 @@
 <nav class="sticky top-0 z-50 bg-white border-b border-gray-100">
     <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         <div class="flex items-center gap-8">
-            <a href="index.html" class="text-2xl font-black text-blue-600 tracking-tighter">COMPATCH</a>
+            <a href="index.html" class="text-2xl font-black text-blue-600 tracking-tighter">Well Design</a>
             <div class="hidden md:flex gap-6 text-sm font-semibold text-gray-600">
                     <a href="index.html" class="hover:text-blue-600">메인으로</a>
                     <a href="estimate.html" class="hover:text-blue-600">실시간 견적</a>
@@ -105,6 +105,33 @@
         
         <div id="usedProductList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8 pt-8 border-t border-gray-50">
             </div>
+    </div>
+</section>
+<section class="mt-12">
+    <h2 class="text-2xl font-black mb-6 flex items-center gap-2">
+        <span class="w-2 h-8 bg-blue-600 rounded-full"></span> 견적 부품 DB 관리
+    </h2>
+    <div class="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+            <select id="partCategory" class="px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none text-sm font-bold">
+                <option value="CPU">CPU</option>
+                <option value="메인보드">메인보드</option>
+                <option value="메모리">메모리</option>
+                <option value="그래픽카드">그래픽카드</option>
+                <option value="SSD/HDD">SSD/HDD</option>
+                <option value="케이스">케이스</option>
+                <option value="파워">파워</option>
+                <option value="쿨러">쿨러</option>
+            </select>
+            <input type="text" id="partName" placeholder="부품명 (예: Intel i7 14700)" class="px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none text-sm">
+            <input type="number" id="partPrice" placeholder="단가 (숫자만)" class="px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none text-sm">
+            <input type="number" id="partStock" placeholder="재고 수량" class="px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none text-sm">
+            <input type="text" id="partImage" placeholder="이미지 URL" class="px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none text-sm">
+            <input type="text" id="partDesc" placeholder="상세 설명 (짧게)" class="px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none text-sm">
+        </div>
+        <button onclick="addPartItem()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black hover:bg-blue-700 transition-all">부품 데이터 등록</button>
+        
+        <div id="adminPartList" class="mt-8 space-y-2 max-h-[400px] overflow-y-auto no-scrollbar"></div>
     </div>
 </section>
 
@@ -272,6 +299,50 @@ function loadUsedProductsAdmin() {
                 <h4 class="font-bold text-sm truncate text-gray-800">${data[key].name}</h4>
                 <p class="text-green-600 font-black text-sm mb-3">${data[key].price.toLocaleString()}원</p>
                 <button onclick="deleteData('used_db', '${key}')" class="w-full py-2 bg-white text-red-500 border border-red-100 rounded-lg text-xs font-bold hover:bg-red-50">삭제</button>
+            </div>
+        `).join('');
+    });
+}
+
+// 부품 등록 로직
+function addPartItem() {
+    const category = document.getElementById('partCategory').value;
+    const name = document.getElementById('partName').value;
+    const price = parseInt(document.getElementById('partPrice').value);
+    const stock = parseInt(document.getElementById('partStock').value);
+    const image = document.getElementById('partImage').value || 'https://via.placeholder.com/100';
+    const desc = document.getElementById('partDesc').value;
+
+    if(!name || isNaN(price)) return alert("부품명과 가격은 필수입니다.");
+
+    db.ref('parts_db').push({
+        category, name, price, stock, image, desc,
+        timestamp: Date.now()
+    }).then(() => {
+        alert("부품이 DB에 등록되었습니다.");
+        document.getElementById('partName').value = '';
+        document.getElementById('partPrice').value = '';
+        document.getElementById('partStock').value = '';
+        document.getElementById('partImage').value = '';
+        document.getElementById('partDesc').value = '';
+    });
+}
+
+// 등록된 부품 관리 리스트 출력
+function loadPartsAdmin() {
+    db.ref('parts_db').on('value', (snapshot) => {
+        const data = snapshot.val();
+        const list = document.getElementById('adminPartList');
+        if(!data) { list.innerHTML = '<p class="text-center text-gray-400 py-4">등록된 부품이 없습니다.</p>'; return; }
+
+        list.innerHTML = Object.keys(data).reverse().map(key => `
+            <div class="flex items-center justify-between bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                <div class="flex items-center gap-4">
+                    <span class="text-[10px] font-black px-2 py-1 bg-blue-100 text-blue-600 rounded">${data[key].category}</span>
+                    <span class="font-bold text-gray-800">${data[key].name}</span>
+                    <span class="text-xs text-gray-400">${data[key].price.toLocaleString()}원 (재고:${data[key].stock})</span>
+                </div>
+                <button onclick="deleteData('parts_db', '${key}')" class="text-red-400 text-xs font-bold hover:underline">삭제</button>
             </div>
         `).join('');
     });
