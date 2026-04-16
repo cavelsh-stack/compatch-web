@@ -126,9 +126,7 @@
             <input type="text" id="partName" placeholder="부품명 (예: Intel i7 14700)" class="px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none text-sm">
             <input type="number" id="partPrice" placeholder="단가 (숫자만)" class="px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none text-sm">
             <input type="text" id="partImage" placeholder="이미지 URL" class="px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none text-sm">
-        </div>
-    <div class="md:col-span-2">
-<input type="text" id="partDesc" placeholder="상세 설명 " class="px-5 py-4 bg-gray-50 border-none rounded-2xl outline-none text-sm">
+<input type="text" id="partDesc" placeholder="상세 설명 " class="px-5 py-4 bg-gray-50 border-none rounded-4xl outline-none text-sm">
         </div>
         <button onclick="addPartItem()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black hover:bg-blue-700 transition-all">부품 데이터 등록</button>
         
@@ -305,9 +303,36 @@ function loadUsedProductsAdmin() {
     });
 }
 
-// 부품 등록 로직
-
 let editingPartKey = null;
+
+// 부품 등록 로직
+function addPartItem() {
+    const category = document.getElementById('partCategory').value;
+    const name = document.getElementById('partName').value;
+    const price = parseInt(document.getElementById('partPrice').value);
+    const stock = parseInt(document.getElementById('partStock').value);
+    const image = document.getElementById('partImage').value || 'https://via.placeholder.com/100';
+    const description = document.getElementById('partDesc').value; // 변수명 변경
+
+    if(!name || isNaN(price)) return alert("부품명과 가격은 필수입니다.");
+
+    db.ref('parts_db').push({
+        category, 
+        name, 
+        price, 
+        stock, 
+        image, 
+        description, 
+        timestamp: Date.now()
+    }).then(() => {
+        alert("부품이 DB에 등록되었습니다.");
+        // 초기화 로직...
+        document.getElementById('partName').value = '';
+        document.getElementById('partPrice').value = '';
+        document.getElementById('partStock').value = '';
+        document.getElementById('partImage').value = '';
+        document.getElementById('partDesc').value = '';    });
+}
 
 // 1. 부품 저장 (등록 및 수정 공용)
 function savePartItem() {
