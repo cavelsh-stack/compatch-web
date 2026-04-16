@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>통합 관리자 모드 | Well Design</title>
+    <title>통합 관리자 센터 | Well Design</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -11,6 +11,8 @@
         body { font-family: 'Inter', 'Malgun Gothic', sans-serif; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .tab-active { color: #2563eb; border-bottom: 2px solid #2563eb; font-weight: 900; }
+        .input-focus { outline: none; transition: all 0.2s; }
+        .input-focus:focus { ring: 2px; ring-color: #3b82f6; background-color: white; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900">
@@ -21,7 +23,7 @@
         <button onclick="logout()" class="text-sm font-bold text-gray-400 hover:text-red-500 transition-colors">로그아웃</button>
     </div>
     <div class="max-w-7xl mx-auto px-4 flex gap-8 border-t border-gray-50 overflow-x-auto no-scrollbar">
-        <button onclick="switchTab('requests')" id="tab-requests" class="py-4 text-sm font-bold text-gray-400 whitespace-nowrap tab-active">견적/판매 신청 내역</button>
+        <button onclick="switchTab('requests')" id="tab-requests" class="py-4 text-sm font-bold text-gray-400 whitespace-nowrap tab-active">신청 내역 (견적/중고)</button>
         <button onclick="switchTab('archive')" id="tab-archive" class="py-4 text-sm font-bold text-gray-400 whitespace-nowrap">자료실 관리</button>
         <button onclick="switchTab('used')" id="tab-used" class="py-4 text-sm font-bold text-gray-400 whitespace-nowrap">중고 제품 DB</button>
         <button onclick="switchTab('parts')" id="tab-parts" class="py-4 text-sm font-bold text-gray-400 whitespace-nowrap">견적 부품 DB</button>
@@ -37,67 +39,109 @@
 
     <section id="sec-archive" class="tab-content hidden">
         <h2 class="text-2xl font-black mb-6">자료실 관리</h2>
-        <div class="bg-white p-6 rounded-[24px] border border-gray-100 mb-8 text-center text-gray-400">데이터를 불러오는 중입니다...</div>
+        <div class="bg-white rounded-[32px] p-8 shadow-sm border border-gray-100 mb-10">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <input type="hidden" id="arcKey">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-2 ml-1">카테고리</label>
+                    <select id="arcCategory" class="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 font-bold">
+                        <option>Utility</option><option>Driver</option><option>BIOS</option><option>Manual</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-2 ml-1">제목</label>
+                    <input type="text" id="arcTitle" class="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 font-bold">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-2 ml-1">다운로드 링크</label>
+                    <input type="text" id="arcLink" class="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 font-bold">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-2 ml-1">날짜</label>
+                    <input type="date" id="arcDate" class="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 font-bold">
+                </div>
+            </div>
+            <div class="mt-8 flex gap-3">
+                <button onclick="saveArchive()" id="arcBtn" class="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg">자료 등록</button>
+                <button onclick="resetArcForm()" id="arcCancel" class="hidden px-8 bg-gray-100 text-gray-500 rounded-2xl font-bold">취소</button>
+            </div>
+        </div>
+        <div id="archiveList" class="space-y-4"></div>
     </section>
 
     <section id="sec-used" class="tab-content hidden">
         <h2 class="text-2xl font-black mb-6">중고 제품 DB 관리</h2>
-        <div id="usedProductList" class="space-y-4 text-center text-gray-400">데이터를 불러오는 중입니다...</div>
+        <div class="bg-white rounded-[32px] p-8 shadow-sm border border-gray-100 mb-10">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <input type="hidden" id="usedKey">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-2 ml-1">제품명</label>
+                    <input type="text" id="usedName" class="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 font-bold">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-2 ml-1">판매 가격 (숫자만)</label>
+                    <input type="number" id="usedPrice" class="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 font-bold">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-400 mb-2 ml-1">이미지 URL</label>
+                    <input type="text" id="usedImage" class="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 font-bold">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-400 mb-2 ml-1">제품 사양 및 설명</label>
+                    <textarea id="usedDesc" rows="4" class="w-full bg-gray-50 border-none rounded-3xl px-6 py-5 font-medium"></textarea>
+                </div>
+            </div>
+            <div class="mt-8 flex gap-3">
+                <button onclick="saveUsed()" id="usedBtn" class="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg">중고 제품 등록</button>
+                <button onclick="resetUsedForm()" id="usedCancel" class="hidden px-8 bg-gray-100 text-gray-500 rounded-2xl font-bold">취소</button>
+            </div>
+        </div>
+        <div id="usedProductList" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
     </section>
 
     <section id="sec-parts" class="tab-content hidden">
         <h2 class="text-2xl font-black mb-6">견적 부품 DB 관리</h2>
-        
         <div class="bg-white rounded-[32px] p-8 shadow-sm border border-gray-100 mb-10">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <input type="hidden" id="partKey">
                 <div>
                     <label class="block text-xs font-bold text-gray-400 mb-2 ml-1">카테고리</label>
-                    <select id="partCategory" class="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-blue-500 font-bold">
+                    <select id="partCategory" class="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 font-bold">
                         <option>CPU</option><option>메인보드</option><option>메모리</option><option>그래픽카드</option>
                         <option>SSD/HDD</option><option>케이스</option><option>파워</option><option>쿨러</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-400 mb-2 ml-1">부품명</label>
-                    <input type="text" id="partName" class="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-blue-500 font-bold">
+                    <input type="text" id="partName" class="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 font-bold">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-2 ml-1">판매 가격 (숫자만)</label>
-                    <input type="number" id="partPrice" class="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-blue-500 font-bold">
+                    <label class="block text-xs font-bold text-gray-400 mb-2 ml-1">판매 가격</label>
+                    <input type="number" id="partPrice" class="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 font-bold">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-400 mb-2 ml-1">이미지 URL</label>
-                    <input type="text" id="partImage" class="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 focus:ring-2 focus:ring-blue-500 font-bold" placeholder="https://...">
+                    <input type="text" id="partImage" class="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 font-bold">
                 </div>
-                
                 <div class="md:col-span-2">
-                    <label class="block text-xs font-bold text-gray-400 mb-2 ml-1">상세 사양 및 설명</label>
-                    <textarea id="partDesc" rows="8" class="w-full bg-gray-50 border-none rounded-3xl px-6 py-5 focus:ring-2 focus:ring-blue-500 font-medium resize-none leading-relaxed" placeholder="상세 스펙을 입력하세요."></textarea>
+                    <label class="block text-xs font-bold text-gray-400 mb-2 ml-1">상세 설명 (가로 확장)</label>
+                    <textarea id="partDesc" rows="8" class="w-full bg-gray-50 border-none rounded-3xl px-6 py-5 font-medium"></textarea>
                 </div>
             </div>
-            
-            <div class="mt-8 flex flex-col gap-3">
-                <button id="submitBtn" onclick="savePartItem()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black hover:bg-blue-700 transition-all shadow-lg">
-                    부품 데이터 등록
-                </button>
-                <button id="cancelBtn" onclick="resetPartForm()" class="hidden w-full bg-gray-100 text-gray-500 py-3 rounded-2xl font-bold">수정 취소</button>
+            <div class="mt-8 flex gap-3">
+                <button onclick="savePart()" id="partBtn" class="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg">부품 등록</button>
+                <button onclick="resetPartForm()" id="partCancel" class="hidden px-8 bg-gray-100 text-gray-500 rounded-2xl font-bold">취소</button>
             </div>
         </div>
-
-        <div id="adminPartsList" class="grid grid-cols-1 gap-4"></div>
+        <div id="adminPartsList" class="space-y-4"></div>
     </section>
 </main>
 
 <script>
-    // Firebase 설정
-         const firebaseConfig = { databaseURL: "https://compatch-e7305-default-rtdb.asia-southeast1.firebasedatabase.app/" };
+        const firebaseConfig = { databaseURL: "https://compatch-e7305-default-rtdb.asia-southeast1.firebasedatabase.app/" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-
-    let editingPartKey = null;
-
-    // 탭 전환
     function switchTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
         document.getElementById('sec-' + tabId).classList.remove('hidden');
@@ -105,125 +149,207 @@
         document.getElementById('tab-' + tabId).classList.add('tab-active');
     }
 
-    // 저장이 안되는 문제 해결 로직
-    function savePartItem() {
-        const category = document.getElementById('partCategory').value;
-        const name = document.getElementById('partName').value;
-        const price = parseInt(document.getElementById('partPrice').value);
-        const image = document.getElementById('partImage').value || "https://via.placeholder.com/150";
-        const description = document.getElementById('partDesc').value;
-
-        if(!name || isNaN(price)) {
-            alert("부품명과 가격을 정확히 입력해주세요.");
-            return;
-        }
-
-        const partData = {
-            category,
-            name,
-            price,
-            image,
-            description,
-            timestamp: Date.now()
-        };
-
-        if (editingPartKey) {
-            // 수정 모드: update 사용
-            db.ref('parts_db').child(editingPartKey).update(partData)
-                .then(() => {
-                    alert("정보가 수정되었습니다.");
-                    resetPartForm();
-                })
-                .catch(err => alert("수정 중 오류 발생: " + err));
-        } else {
-            // 등록 모드: push 사용
-            db.ref('parts_db').push(partData)
-                .then(() => {
-                    alert("새 부품이 등록되었습니다.");
-                    resetPartForm();
-                })
-                .catch(err => alert("등록 중 오류 발생: " + err));
-        }
-    }
-
-    function editPart(key, json) {
-        const item = JSON.parse(decodeURIComponent(json));
-        editingPartKey = key;
-
-        document.getElementById('partCategory').value = item.category;
-        document.getElementById('partName').value = item.name;
-        document.getElementById('partPrice').value = item.price;
-        document.getElementById('partImage').value = item.image || "";
-        document.getElementById('partDesc').value = item.description || item.desc || "";
-
-        const btn = document.getElementById('submitBtn');
-        btn.innerText = "부품 정보 수정 완료";
-        btn.className = "w-full bg-green-600 text-white py-4 rounded-2xl font-black shadow-lg";
-        document.getElementById('cancelBtn').classList.remove('hidden');
-        window.scrollTo({top: 0, behavior: 'smooth'});
-    }
-
-    function resetPartForm() {
-        editingPartKey = null;
-        document.getElementById('partName').value = "";
-        document.getElementById('partPrice').value = "";
-        document.getElementById('partImage').value = "";
-        document.getElementById('partDesc').value = "";
-        
-        const btn = document.getElementById('submitBtn');
-        btn.innerText = "부품 데이터 등록";
-        btn.className = "w-full bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg";
-        document.getElementById('cancelBtn').classList.add('hidden');
-    }
-
-    function loadPartsAdmin() {
-        db.ref('parts_db').on('value', snap => {
+    // --- 1. 신청 내역 (조회/삭제) ---
+    function loadRequests() {
+        db.ref('requests').on('value', snap => {
             const data = snap.val();
-            const container = document.getElementById('adminPartsList');
-            if(!data) {
-                container.innerHTML = `<p class="text-center py-20 text-gray-400">등록된 부품이 없습니다.</p>`;
-                return;
-            }
-            
+            const container = document.getElementById('requestList');
+            if(!data) { container.innerHTML = `<div class="py-20 text-center text-gray-400">내역이 없습니다.</div>`; return; }
+            container.innerHTML = Object.entries(data).reverse().map(([key, req]) => `
+                <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-full uppercase">${req.type || '신청'}</span>
+                        <button onclick="if(confirm('삭제할까요?')) db.ref('requests').child('${key}').remove()" class="text-red-300 hover:text-red-500 text-xs font-bold">기록 삭제</button>
+                    </div>
+                    <h3 class="font-black text-xl">${req.name} <span class="text-sm font-normal text-gray-400 ml-2">${req.phone}</span></h3>
+                    <p class="text-gray-600 text-sm mt-2 mb-4 whitespace-pre-wrap">${req.memo || '메모 없음'}</p>
+                    <div class="pt-4 border-t border-dashed flex justify-between items-center">
+                        <span class="text-xs text-gray-400">${new Date(req.timestamp).toLocaleString()}</span>
+                        <span class="font-black text-blue-600">${req.totalPrice}</span>
+                    </div>
+                </div>
+            `).join('');
+        });
+    }
+
+    // --- 2. 자료실 (입력/수정/삭제) ---
+    function saveArchive() {
+        const key = document.getElementById('arcKey').value;
+        const data = {
+            category: document.getElementById('arcCategory').value,
+            title: document.getElementById('arcTitle').value,
+            link: document.getElementById('arcLink').value,
+            date: document.getElementById('arcDate').value
+        };
+        if(!data.title || !data.link) return alert("내용을 입력해주세요.");
+        if(key) db.ref('archive').child(key).update(data).then(() => { alert("수정완료"); resetArcForm(); });
+        else db.ref('archive').push(data).then(() => { alert("등록완료"); resetArcForm(); });
+    }
+    function editArc(key, json) {
+        const item = JSON.parse(decodeURIComponent(json));
+        document.getElementById('arcKey').value = key;
+        document.getElementById('arcCategory').value = item.category;
+        document.getElementById('arcTitle').value = item.title;
+        document.getElementById('arcLink').value = item.link;
+        document.getElementById('arcDate').value = item.date;
+        document.getElementById('arcBtn').innerText = "자료 수정 완료";
+        document.getElementById('arcCancel').classList.remove('hidden');
+    }
+    function resetArcForm() {
+        document.getElementById('arcKey').value = "";
+        document.getElementById('arcTitle').value = "";
+        document.getElementById('arcLink').value = "";
+        document.getElementById('arcBtn').innerText = "자료 등록";
+        document.getElementById('arcCancel').classList.add('hidden');
+    }
+    function loadArchive() {
+        db.ref('archive').on('value', snap => {
+            const data = snap.val();
+            const container = document.getElementById('archiveList');
+            if(!data) { container.innerHTML = ""; return; }
             container.innerHTML = Object.entries(data).reverse().map(([key, item]) => {
                 const json = encodeURIComponent(JSON.stringify(item));
                 return `
-                    <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm">
-                        <div class="flex items-start justify-between mb-4">
-                            <div class="flex gap-4">
-                                <img src="${item.image}" class="w-16 h-16 rounded-2xl object-cover bg-gray-50">
-                                <div>
-                                    <span class="text-[10px] font-black px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full uppercase">${item.category}</span>
-                                    <h4 class="font-bold text-gray-900 text-lg mt-1">${item.name}</h4>
-                                    <p class="text-blue-600 font-black">${Number(item.price).toLocaleString()}원</p>
-                                </div>
-                            </div>
-                            <div class="flex gap-2">
-                                <button onclick="editPart('${key}', '${json}')" class="px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold hover:bg-blue-600 hover:text-white transition-all">수정</button>
-                                <button onclick="if(confirm('삭제할까요?')) db.ref('parts_db').child('${key}').remove()" class="px-4 py-2 bg-gray-100 text-red-400 rounded-xl text-xs font-bold hover:bg-red-500 hover:text-white transition-all">삭제</button>
-                            </div>
-                        </div>
-                        <div class="bg-gray-50 rounded-2xl p-4">
-                            <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">${item.description || item.desc || '설명 없음'}</p>
-                        </div>
+                <div class="bg-white p-5 rounded-2xl border border-gray-100 flex justify-between items-center">
+                    <div>
+                        <span class="text-[10px] font-bold text-blue-500">${item.category}</span>
+                        <h4 class="font-bold">${item.title}</h4>
                     </div>
-                `;
+                    <div class="flex gap-2">
+                        <button onclick="editArc('${key}', '${json}')" class="px-3 py-1 bg-gray-50 rounded-lg text-xs font-bold">수정</button>
+                        <button onclick="if(confirm('삭제?')) db.ref('archive').child('${key}').remove()" class="px-3 py-1 bg-red-50 text-red-400 rounded-lg text-xs font-bold">삭제</button>
+                    </div>
+                </div>`;
             }).join('');
         });
     }
 
-    // 초기 로드 시 암호 확인 로직 (기존 0927 유지)
+    // --- 3. 중고 제품 (입력/수정/삭제) ---
+    function saveUsed() {
+        const key = document.getElementById('usedKey').value;
+        const data = {
+            name: document.getElementById('usedName').value,
+            price: parseInt(document.getElementById('usedPrice').value),
+            image: document.getElementById('usedImage').value,
+            description: document.getElementById('usedDesc').value
+        };
+        if(!data.name || isNaN(data.price)) return alert("이름과 가격 확인");
+        if(key) db.ref('used_products').child(key).update(data).then(() => { alert("수정완료"); resetUsedForm(); });
+        else db.ref('used_products').push(data).then(() => { alert("등록완료"); resetUsedForm(); });
+    }
+    function editUsed(key, json) {
+        const item = JSON.parse(decodeURIComponent(json));
+        document.getElementById('usedKey').value = key;
+        document.getElementById('usedName').value = item.name;
+        document.getElementById('usedPrice').value = item.price;
+        document.getElementById('usedImage').value = item.image;
+        document.getElementById('usedDesc').value = item.description || "";
+        document.getElementById('usedBtn').innerText = "중고 제품 수정 완료";
+        document.getElementById('usedCancel').classList.remove('hidden');
+    }
+    function resetUsedForm() {
+        document.getElementById('usedKey').value = "";
+        document.getElementById('usedName').value = ""; document.getElementById('usedPrice').value = "";
+        document.getElementById('usedImage').value = ""; document.getElementById('usedDesc').value = "";
+        document.getElementById('usedBtn').innerText = "중고 제품 등록";
+        document.getElementById('usedCancel').classList.add('hidden');
+    }
+    function loadUsed() {
+        db.ref('used_products').on('value', snap => {
+            const data = snap.val();
+            const container = document.getElementById('usedProductList');
+            if(!data) { container.innerHTML = ""; return; }
+            container.innerHTML = Object.entries(data).reverse().map(([key, item]) => {
+                const json = encodeURIComponent(JSON.stringify(item));
+                return `
+                <div class="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm">
+                    <img src="${item.image}" class="w-full h-32 object-cover rounded-2xl mb-4">
+                    <h4 class="font-bold">${item.name}</h4>
+                    <p class="text-blue-600 font-black mb-4">${item.price.toLocaleString()}원</p>
+                    <div class="flex gap-2">
+                        <button onclick="editUsed('${key}', '${json}')" class="flex-1 py-2 bg-gray-50 rounded-xl text-xs font-bold">수정</button>
+                        <button onclick="if(confirm('삭제?')) db.ref('used_products').child('${key}').remove()" class="px-4 py-2 bg-red-50 text-red-400 rounded-xl text-xs font-bold">삭제</button>
+                    </div>
+                </div>`;
+            }).join('');
+        });
+    }
+
+    // --- 4. 견적 부품 (입력/수정/삭제) ---
+    function savePart() {
+        const key = document.getElementById('partKey').value;
+        const data = {
+            category: document.getElementById('partCategory').value,
+            name: document.getElementById('partName').value,
+            price: parseInt(document.getElementById('partPrice').value),
+            image: document.getElementById('partImage').value,
+            description: document.getElementById('partDesc').value
+        };
+        if(!data.name) return alert("부품명 입력");
+        if(key) db.ref('parts_db').child(key).update(data).then(() => { alert("수정완료"); resetPartForm(); });
+        else db.ref('parts_db').push(data).then(() => { alert("등록완료"); resetPartForm(); });
+    }
+    function editPart(key, json) {
+        const item = JSON.parse(decodeURIComponent(json));
+        document.getElementById('partKey').value = key;
+        document.getElementById('partCategory').value = item.category;
+        document.getElementById('partName').value = item.name;
+        document.getElementById('partPrice').value = item.price;
+        document.getElementById('partImage').value = item.image;
+        document.getElementById('partDesc').value = item.description || "";
+        document.getElementById('partBtn').innerText = "부품 정보 수정 완료";
+        document.getElementById('partCancel').classList.remove('hidden');
+    }
+    function resetPartForm() {
+        document.getElementById('partKey').value = "";
+        document.getElementById('partName').value = ""; document.getElementById('partPrice').value = "";
+        document.getElementById('partImage').value = ""; document.getElementById('partDesc').value = "";
+        document.getElementById('partBtn').innerText = "부품 등록";
+        document.getElementById('partCancel').classList.add('hidden');
+    }
+    function loadParts() {
+        db.ref('parts_db').on('value', snap => {
+            const data = snap.val();
+            const container = document.getElementById('adminPartsList');
+            if(!data) { container.innerHTML = ""; return; }
+            container.innerHTML = Object.entries(data).reverse().map(([key, item]) => {
+                const json = encodeURIComponent(JSON.stringify(item));
+                return `
+                <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm">
+                    <div class="flex justify-between items-start">
+                        <div class="flex gap-4">
+                            <img src="${item.image}" class="w-16 h-16 rounded-2xl object-cover">
+                            <div>
+                                <span class="text-[10px] font-black text-blue-500 uppercase">${item.category}</span>
+                                <h4 class="font-bold text-lg">${item.name}</h4>
+                                <p class="text-blue-600 font-black">${Number(item.price).toLocaleString()}원</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="editPart('${key}', '${json}')" class="px-4 py-2 bg-gray-50 rounded-xl text-xs font-bold">수정</button>
+                            <button onclick="if(confirm('삭제?')) db.ref('parts_db').child('${key}').remove()" class="px-4 py-2 bg-red-50 text-red-400 rounded-xl text-xs font-bold">삭제</button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        });
+    }
+
+    function logout() { sessionStorage.removeItem("adminLoggedIn"); location.href="index.html"; }
+
     window.onload = () => {
         if(sessionStorage.getItem("adminLoggedIn") !== "true") {
-            const pw = prompt("관리자 암호를 입력하세요.");
+            const pw = prompt("관리자 암호(0927)");
             if(pw === "0927") {
                 sessionStorage.setItem("adminLoggedIn", "true");
-                loadPartsAdmin();
-            } else { location.href="index.html"; }
-        } else {
-            loadPartsAdmin();
-        }
+                loadAll();
+            } else location.href="index.html";
+        } else loadAll();
     };
+
+    function loadAll() {
+        loadRequests(); loadArchive(); loadUsed(); loadParts();
+    }
 </script>
 </body>
 </html>
