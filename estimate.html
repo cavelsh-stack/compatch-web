@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>실시간 견적 | Compatch</title>
+    <title>실시간 견적 | Well Design</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -12,23 +12,23 @@
         .sticky-summary { position: sticky; top: 5rem; }
         #pdf-template { display: none; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-.part-item {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    background: white;
-    padding: 1.25rem 2rem;
-    border-radius: 20px;
-    border: 1px solid #f1f5f9;
-    transition: all 0.2s;
-    cursor: pointer;
-    margin-bottom: 0.75rem;
-}
-.part-item:hover {
-    border-color: #2563eb;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    transform: translateX(4px);
-}
+        .part-item {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            background: white;
+            padding: 1.25rem 2rem;
+            border-radius: 20px;
+            border: 1px solid #f1f5f9;
+            transition: all 0.2s;
+            cursor: pointer;
+            margin-bottom: 0.75rem;
+        }
+        .part-item:hover {
+            border-color: #2563eb;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transform: translateX(4px);
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900">
@@ -47,6 +47,21 @@
     </nav>
 
     <main class="max-w-7xl mx-auto px-4 py-10">
+        <div class="mb-8 p-6 bg-blue-50 border border-blue-100 rounded-[32px] flex items-start gap-4 shadow-sm">
+            <div class="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center shrink-0 mt-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <div>
+                <h2 class="text-blue-700 font-black text-lg mb-1">부품 구매 시 주의 사항</h2>
+                <ul class="text-blue-600/80 text-sm font-bold leading-relaxed space-y-1">
+                    <li>• CPU 모델명 뒤에 <span class="text-blue-800 underline">F가 붙는 경우</span>는 CPU 자체 그래픽 기능이 없어서 별도로 그래픽 카드를 구입해야 합니다.</li>
+                    <li>• CPU 부품 안에 <span class="text-blue-800 underline">쿨러가 없는 경우</span>도 별도 쿨러를 구입해야 합니다.</li>
+                </ul>
+            </div>
+        </div>
+
         <div class="flex flex-col lg:flex-row gap-8">
             <div class="flex-1 space-y-6" id="partsContainer">
                 <div class="text-center py-20 text-gray-400">상품 정보를 불러오는 중입니다...</div>
@@ -137,75 +152,72 @@
         let selectedItems = {};
         const ASSEMBLY_FEE = 100000;
 
-        // 1. 부품 로드 함수 (ID partsContainer 사용)
-function loadParts() {
-    const container = document.getElementById('partsContainer');
-    if(!container) return;
+        function loadParts() {
+            const container = document.getElementById('partsContainer');
+            if(!container) return;
 
-    db.ref('parts_db').on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (!data) {
-            container.innerHTML = `<div class="col-span-full text-center py-20 bg-white rounded-[40px] border-2 border-dashed border-gray-100">등록된 부품이 없습니다.</div>`;
-            return;
+            db.ref('parts_db').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (!data) {
+                    container.innerHTML = `<div class="col-span-full text-center py-20 bg-white rounded-[40px] border-2 border-dashed border-gray-100">등록된 부품이 없습니다.</div>`;
+                    return;
+                }
+
+                const categories = ["CPU", "메인보드", "메모리", "그래픽카드", "SSD/HDD", "케이스", "파워", "쿨러"];
+                const allItems = Object.entries(data);
+
+                container.innerHTML = categories.map(cat => {
+                    const catParts = allItems.filter(([key, item]) => item.category === cat);
+                    if (catParts.length === 0) return '';
+
+                    return `
+                        <div class="mb-10">
+                            <h3 class="text-sm font-black mb-4 flex items-center gap-2 text-gray-500 uppercase tracking-wider">
+                                <span class="w-1 h-4 bg-blue-600 rounded-full"></span> ${cat}
+                            </h3>
+                            <div class="space-y-2">
+                                ${catParts.map(([key, item]) => `
+                                    <div onclick="selectPart('${cat}', '${item.name}', ${item.price})" 
+                                         class="flex items-start gap-6 bg-white px-6 py-5 rounded-2xl border border-gray-100 hover:border-blue-500 hover:shadow-sm transition-all cursor-pointer group">
+                                        
+                                        <img src="${item.image || 'https://via.placeholder.com/150'}" 
+                                             class="w-16 h-16 object-cover rounded-xl bg-gray-50 flex-shrink-0 mt-1">
+                                        
+                                        <div class="flex-1 flex flex-col md:flex-row md:items-start gap-2 md:gap-8 min-w-0">
+                                            <div class="flex-1 min-w-0">
+                                                <h4 class="font-bold text-gray-800 text-base leading-tight group-hover:text-blue-600 transition-colors">${item.name}</h4>
+                                                
+                                                <p class="text-xs text-gray-400 mt-1.5 leading-relaxed break-keep">
+                                                    ${item.description || item.desc || '상세 사양 정보가 없습니다.'}
+                                                </p>
+                                            </div>
+                                            
+                                            <div class="text-right flex-shrink-0 md:pt-1">
+                                                <p class="text-gray-900 font-black text-lg">${Number(item.price).toLocaleString()}원</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="hidden md:flex items-center self-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
+                                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            });
         }
 
-        const categories = ["CPU", "메인보드", "메모리", "그래픽카드", "SSD/HDD", "케이스", "파워", "쿨러"];
-        const allItems = Object.entries(data);
-
-        container.innerHTML = categories.map(cat => {
-            const catParts = allItems.filter(([key, item]) => item.category === cat);
-            if (catParts.length === 0) return '';
-
-            return `
-                <div class="mb-10">
-                    <h3 class="text-sm font-black mb-4 flex items-center gap-2 text-gray-500 uppercase tracking-wider">
-                        <span class="w-1 h-4 bg-blue-600 rounded-full"></span> ${cat}
-                    </h3>
-                    <div class="space-y-2">
-                        ${catParts.map(([key, item]) => `
-                            <div onclick="selectPart('${cat}', '${item.name}', ${item.price})" 
-                                 class="flex items-start gap-6 bg-white px-6 py-5 rounded-2xl border border-gray-100 hover:border-blue-500 hover:shadow-sm transition-all cursor-pointer group">
-                                
-                                <img src="${item.image || 'https://via.placeholder.com/150'}" 
-                                     class="w-16 h-16 object-cover rounded-xl bg-gray-50 flex-shrink-0 mt-1">
-                                
-                                <div class="flex-1 flex flex-col md:flex-row md:items-start gap-2 md:gap-8 min-w-0">
-                                    <div class="flex-1 min-w-0">
-                                        <h4 class="font-bold text-gray-800 text-base leading-tight group-hover:text-blue-600 transition-colors">${item.name}</h4>
-                                        
-                                        <p class="text-xs text-gray-400 mt-1.5 leading-relaxed break-keep">
-                                            ${item.description || item.desc || '상세 사양 정보가 없습니다.'}
-                                        </p>
-                                    </div>
-                                    
-                                    <div class="text-right flex-shrink-0 md:pt-1">
-                                        <p class="text-gray-900 font-black text-lg">${Number(item.price).toLocaleString()}원</p>
-                                    </div>
-                                </div>
-
-                                <div class="hidden md:flex items-center self-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
-                                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path>
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        }).join('');
-    });
-}
-
-        // 2. 부품 선택 처리
         function selectPart(category, name, price) {
             selectedItems[category] = { name, price, count: 1 };
             updateSummary();
         }
 
-        // 3. 수량 업데이트 및 삭제
         function updateCount(category, change) {
             if (!selectedItems[category]) return;
             selectedItems[category].count += change;
@@ -213,14 +225,12 @@ function loadParts() {
             updateSummary();
         }
 
-        // 4. 조립 옵션 토글
         function toggleAssembly() {
             const check = document.getElementById('assemblyCheck');
             if (event.target.type !== 'checkbox') check.checked = !check.checked;
             updateSummary();
         }
 
-        // 5. 합계 계산 및 화면 갱신 (조립비 켜기/끄기 즉각 반영)
         function updateSummary() {
             const summary = document.getElementById('selectedSummary');
             const totalDisplay = document.getElementById('totalDisplay');
@@ -253,7 +263,6 @@ function loadParts() {
             totalDisplay.innerText = total.toLocaleString() + '원';
         }
 
-        // 6. PDF 생성 로직
         function generatePDF(data) {
             document.getElementById('pdf-name').innerText = data.name;
             document.getElementById('pdf-phone').innerText = data.phone;
@@ -295,7 +304,6 @@ function loadParts() {
             }).from(element).save().then(() => { element.style.display = 'none'; });
         }
 
-        // 7. 상담 신청 및 데이터 저장
         document.getElementById('consultForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const isAssemblyChecked = document.getElementById('assemblyCheck').checked;
