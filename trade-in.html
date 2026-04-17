@@ -52,29 +52,29 @@
                 const container = document.getElementById('usedProductContainer');
                 
                 if(!data) {
-                    container.innerHTML = '<p class="col-span-full text-center py-20 text-gray-400 font-bold">등록된 중고 상품이 없습니다.</p>';
-                    return;
-                }
-
-                const keys = Object.keys(data).reverse();
-                container.innerHTML = keys.map(key => {
-                    const item = data[key];
-                    return `
-                        <div class="bg-white rounded-[40px] overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all group">
-                            <div class="aspect-video overflow-hidden bg-gray-100">
-                                <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                            </div>
-                            <div class="p-8">
-                                <h3 class="font-black text-xl mb-2 text-gray-800 truncate">${item.name}</h3>
-                                <p class="text-2xl font-black text-blue-600 mb-8">${item.price.toLocaleString()}원</p>
-                                <button onclick="applyPurchase('${item.name}', ${item.price})" 
-                                        class="w-full py-5 bg-gray-900 text-white rounded-2xl font-black hover:bg-blue-600 transition shadow-lg">
-                                    구매 상담 신청
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
+container.innerHTML = keys.map(key => {
+    const item = data[key];
+    return `
+        <div class="bg-white rounded-[40px] overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all group">
+            <div class="aspect-video overflow-hidden bg-gray-100">
+                <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+            </div>
+            <div class="p-8">
+                <h3 class="font-black text-xl mb-2 text-gray-800 whitespace-normal break-all leading-tight">
+                    ${item.name}
+                </h3>
+                <p class="text-sm text-gray-500 mb-4 leading-relaxed">
+                    ${item.description || "상세 설명이 등록되지 않은 상품입니다."}
+                </p>
+                <p class="text-2xl font-black text-blue-600 mb-8">${item.price.toLocaleString()}원</p>
+                <button onclick="applyPurchase('${item.name}', ${item.price})" 
+                        class="w-full py-5 bg-gray-900 text-white rounded-2xl font-black hover:bg-blue-600 transition shadow-lg">
+                    구매 상담 신청
+                </button>
+            </div>
+        </div>
+    `;
+}).join('');
             });
         }
 
