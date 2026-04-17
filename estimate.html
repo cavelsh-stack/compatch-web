@@ -265,46 +265,62 @@
             totalDisplay.innerText = total.toLocaleString() + '원';
         }
 
-        function generatePDF(data) {
-            document.getElementById('pdf-name').innerText = data.name;
-            document.getElementById('pdf-phone').innerText = data.phone;
-            document.getElementById('pdf-date').innerText = "발행일: " + new Date().toLocaleDateString();
-            document.getElementById('pdf-total').innerText = data.totalPrice;
+ function generatePDF(data) {
+    const element = document.getElementById('pdf-template');
+    
+    // 데이터 삽입
+    document.getElementById('pdf-name').innerText = data.name;
+    document.getElementById('pdf-phone').innerText = data.phone;
+    document.getElementById('pdf-date').innerText = "발행일: " + new Date().toLocaleDateString();
+    document.getElementById('pdf-total').innerText = data.totalPrice;
 
-            const itemsTable = document.getElementById('pdf-items');
-            const isAssemblyChecked = document.getElementById('assemblyCheck').checked;
-            
-            let rows = Object.entries(data.items).map(([cat, item]) => `
-                <tr>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee; font-size: 12px;">${cat}</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee; font-size: 12px; font-weight: bold;">${item.name}</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-size: 12px;">${item.count}</td>
-                    <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right; font-size: 12px;">${(item.price * item.count).toLocaleString()}원</td>
-                </tr>
-            `).join('');
+    const itemsTable = document.getElementById('pdf-items');
+    const isAssemblyChecked = document.getElementById('assemblyCheck').checked;
+    
+    let rows = Object.entries(data.items).map(([cat, item]) => `
+        <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #eee; font-size: 12px;">${cat}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #eee; font-size: 12px; font-weight: bold;">${item.name}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-size: 12px;">${item.count}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right; font-size: 12px;">${(item.price * item.count).toLocaleString()}원</td>
+        </tr>
+    `).join('');
 
-            if (isAssemblyChecked) {
-                rows += `
-                    <tr style="background-color: #f0f7ff;">
-                        <td style="padding: 12px; border-bottom: 1px solid #eee; font-size: 12px;">Service</td>
-                        <td style="padding: 12px; border-bottom: 1px solid #eee; font-size: 12px; font-weight: bold;">조립 및 1년 출장 A/S</td>
-                        <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-size: 12px;">1</td>
-                        <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right; font-size: 12px; font-weight: bold; color: #2563eb;">100,000원</td>
-                    </tr>`;
-            }
+    if (isAssemblyChecked) {
+        rows += `
+            <tr style="background-color: #f0f7ff;">
+                <td style="padding: 12px; border-bottom: 1px solid #eee; font-size: 12px;">Service</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; font-size: 12px; font-weight: bold;">조립 및 1년 출장 A/S</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-size: 12px;">1</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right; font-size: 12px; font-weight: bold; color: #2563eb;">100,000원</td>
+            </tr>`;
+    }
+    itemsTable.innerHTML = rows;
 
-            itemsTable.innerHTML = rows;
+    // --- 수정 포인트: 요소 보이기 ---
+    element.style.display = 'block';
+    element.style.position = 'fixed';
+    element.style.left = '-9999px'; // 화면 밖으로 밀어냄
+    element.style.top = '0';
 
-            const element = document.getElementById('pdf-template');
-            element.style.display = 'block';
-            html2pdf().set({
-                margin: 10,
-                filename: `Compatch_견적서_${data.name}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 3 },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            }).from(element).save().then(() => { element.style.display = 'none'; });
-        }
+    const opt = {
+        margin: 10,
+        filename: `Compatch_견적서_${data.name}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+            scale: 2, 
+            useCORS: true, // 이미지 로딩 문제 해결
+            logging: false,
+            letterRendering: true
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    // 렌더링 지연을 주어 브라우저가 표를 그릴 시간을 줌
+    html2pdf().set(opt).from(element).save().then(() => {
+        element.style.display = 'none';
+    });
+}
 
         document.getElementById('consultForm').addEventListener('submit', function(e) {
             e.preventDefault();
