@@ -10,24 +10,31 @@
     <style>
         body { font-family: 'Inter', 'Malgun Gothic', sans-serif; }
         .sticky-summary { position: sticky; top: 5rem; }
-        #pdf-template { display: none; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .part-item {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-            background: white;
-            padding: 1.25rem 2rem;
-            border-radius: 20px;
-            border: 1px solid #f1f5f9;
-            transition: all 0.2s;
-            cursor: pointer;
-            margin-bottom: 0.75rem;
+        
+        /* [수정] PDF 템플릿: 화면에는 보이지 않지만 캡처를 위해 레이아웃은 유지 */
+        #pdf-template { 
+            position: absolute;
+            left: -9999px;
+            top: 0;
+            width: 190mm; 
+            background: white; 
+            display: block; /* display: none 대신 화면 밖 배치 */
         }
-        .part-item:hover {
-            border-color: #2563eb;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            transform: translateX(4px);
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* [수정] 견적 요약창: 부품이 많아도 더 많이 보이도록 높이 상향 및 스크롤 개선 */
+        #selectedSummary {
+            max-height: 55vh; 
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        #selectedSummary::-webkit-scrollbar {
+            width: 4px;
+        }
+        #selectedSummary::-webkit-scrollbar-thumb {
+            background-color: #e2e8f0;
+            border-radius: 10px;
         }
     </style>
 </head>
@@ -37,11 +44,11 @@
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-start gap-10">
             <a href="index.html" class="text-xl font-black text-blue-600">Well Design</a>
             <div class="hidden md:flex gap-6 text-sm font-semibold text-gray-600">
-                    <a href="index.html" class="text-blue-600">메인으로</a>
-                    <a href="estimate.html" class="hover:text-blue-600">컴퓨터 견적내기</a>
-                    <a href="trade-in.html" class="hover:text-blue-600">중고 판매</a>
-                    <a href="archive.html" class="hover:text-blue-600">자료실</a>
-                    <a href="admin-list.html" class="hover:text-blue-600">관리자</a>
+                <a href="index.html" class="text-blue-600">메인으로</a>
+                <a href="estimate.html" class="hover:text-blue-600">컴퓨터 견적내기</a>
+                <a href="trade-in.html" class="hover:text-blue-600">중고 판매</a>
+                <a href="archive.html" class="hover:text-blue-600">자료실</a>
+                <a href="admin-list.html" class="hover:text-blue-600">관리자</a>
             </div>
         </div>
     </nav>
@@ -56,10 +63,7 @@
             <div>
                 <h2 class="text-blue-700 font-black text-lg mb-1">부품 구매 시 주의 사항</h2>
                 <ul class="text-blue-600/80 text-sm font-bold leading-relaxed space-y-1">
-                    <li>• CPU 모델명 뒤에 <span class="text-blue-800 underline">F가 붙는 경우</span>는 CPU 자체 그래픽 기능이 없어서 별도로 그래픽 카드를 구입해야 합니다.</li>
-                    <li>• CPU 부품 안에 <span class="text-blue-800 underline">쿨러가 없는 경우</span>도 별도 쿨러를 구입해야 합니다.</li>
-                    <li>• CPU 구매시 <span class="text-blue-800 underline">  소켓이 1700, 1851인지 구분</span>소켓에 따라 메인보드가 다릅니다.</li>
-                    <li>• 메인보드 구매시 <span class="text-blue-800 underline">보드 모델 뒷 번호가 4 또는 5일 경우</span> 4는 메모리 DDR4, 5는 메모리 DDR5 지원으로 나누어 집니다.</li>
+                    <li>• 소켓 및 메모리 규격(DDR4/DDR5) 호환성을 반드시 확인하세요.</li>
                 </ul>
             </div>
         </div>
@@ -82,7 +86,7 @@
                         <span class="text-sm font-black text-blue-600">100,000원</span>
                     </div>
 
-                    <div id="selectedSummary" class="space-y-4 mb-8 max-h-[40vh] overflow-y-auto no-scrollbar">
+                    <div id="selectedSummary" class="space-y-4 mb-8">
                         <p class="text-gray-400 text-sm text-center py-10">선택된 부품이 없습니다.</p>
                     </div>
 
@@ -115,7 +119,7 @@
         </div>
     </div>
 
-    <div id="pdf-template" style="padding: 40px; background: white; font-family: 'Malgun Gothic', sans-serif;">
+    <div id="pdf-template" style="padding: 40px; font-family: 'Malgun Gothic', sans-serif;">
         <div style="border-bottom: 4px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
             <h1 style="font-size: 28px; font-weight: 900; margin: 0;">PC 조립 견적서</h1>
             <span id="pdf-date" style="font-size: 12px; color: #666;"></span>
@@ -145,9 +149,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 
     <script>
-        const firebaseConfig = { 
-            databaseURL: "https://compatch-e7305-default-rtdb.asia-southeast1.firebasedatabase.app/" 
-        };
+        const firebaseConfig = { databaseURL: "https://compatch-e7305-default-rtdb.asia-southeast1.firebasedatabase.app/" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
@@ -157,21 +159,14 @@
         function loadParts() {
             const container = document.getElementById('partsContainer');
             if(!container) return;
-
             db.ref('parts_db').on('value', (snapshot) => {
                 const data = snapshot.val();
-                if (!data) {
-                    container.innerHTML = `<div class="col-span-full text-center py-20 bg-white rounded-[40px] border-2 border-dashed border-gray-100">등록된 부품이 없습니다.</div>`;
-                    return;
-                }
-
+                if (!data) return;
                 const categories = ["CPU", "쿨러", "메인보드", "메모리", "그래픽카드", "SSD/HDD", "케이스", "파워", "모니터", "키보드/마우스"];
                 const allItems = Object.entries(data);
-
                 container.innerHTML = categories.map(cat => {
                     const catParts = allItems.filter(([key, item]) => item.category === cat);
                     if (catParts.length === 0) return '';
-
                     return `
                         <div class="mb-10">
                             <h3 class="text-sm font-black mb-4 flex items-center gap-2 text-gray-500 uppercase tracking-wider">
@@ -180,32 +175,13 @@
                             <div class="space-y-2">
                                 ${catParts.map(([key, item]) => `
                                     <div onclick="selectPart('${cat}', '${item.name}', ${item.price})" 
-                                         class="flex items-start gap-6 bg-white px-6 py-5 rounded-2xl border border-gray-100 hover:border-blue-500 hover:shadow-sm transition-all cursor-pointer group">
-                                        
-                                        <img src="${item.image || 'https://via.placeholder.com/150'}" 
-                                             class="w-16 h-16 object-cover rounded-xl bg-gray-50 flex-shrink-0 mt-1">
-                                        
-                                        <div class="flex-1 flex flex-col md:flex-row md:items-start gap-2 md:gap-8 min-w-0">
-                                            <div class="flex-1 min-w-0">
-                                                <h4 class="font-bold text-gray-800 text-base leading-tight group-hover:text-blue-600 transition-colors">${item.name}</h4>
-                                                
-                                                <p class="text-xs text-gray-400 mt-1.5 leading-relaxed break-keep">
-                                                    ${item.description || item.desc || '상세 사양 정보가 없습니다.'}
-                                                </p>
-                                            </div>
-                                            
-                                            <div class="text-right flex-shrink-0 md:pt-1">
-                                                <p class="text-gray-900 font-black text-lg">${Number(item.price).toLocaleString()}원</p>
-                                            </div>
+                                         class="flex items-start gap-6 bg-white px-6 py-5 rounded-2xl border border-gray-100 hover:border-blue-500 cursor-pointer group">
+                                        <img src="${item.image || 'https://via.placeholder.com/150'}" class="w-16 h-16 object-cover rounded-xl">
+                                        <div class="flex-1">
+                                            <h4 class="font-bold text-gray-800">${item.name}</h4>
+                                            <p class="text-xs text-gray-400 mt-1">${item.description || '상세정보 없음'}</p>
                                         </div>
-
-                                        <div class="hidden md:flex items-center self-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
-                                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path>
-                                                </svg>
-                                            </div>
-                                        </div>
+                                        <div class="text-right"><p class="font-black text-lg">${Number(item.price).toLocaleString()}원</p></div>
                                     </div>
                                 `).join('')}
                             </div>
@@ -237,7 +213,6 @@
             const summary = document.getElementById('selectedSummary');
             const totalDisplay = document.getElementById('totalDisplay');
             const isAssemblyChecked = document.getElementById('assemblyCheck').checked;
-            
             let total = isAssemblyChecked ? ASSEMBLY_FEE : 0;
             
             let html = Object.entries(selectedItems).map(([cat, item]) => {
@@ -260,20 +235,21 @@
                     </div>
                 `;
             }).join('');
-
             summary.innerHTML = html || '<p class="text-gray-400 text-sm text-center py-10">선택된 부품이 없습니다.</p>';
             totalDisplay.innerText = total.toLocaleString() + '원';
         }
 
-        function generatePDF(data) {
+        // [수정] PDF 생성 로직: async/await를 사용하여 렌더링 시간 확보
+        async function generatePDF(data) {
+            const element = document.getElementById('pdf-template');
+            
+            // 데이터 매핑
             document.getElementById('pdf-name').innerText = data.name;
             document.getElementById('pdf-phone').innerText = data.phone;
             document.getElementById('pdf-date').innerText = "발행일: " + new Date().toLocaleDateString();
             document.getElementById('pdf-total').innerText = data.totalPrice;
 
-            const itemsTable = document.getElementById('pdf-items');
             const isAssemblyChecked = document.getElementById('assemblyCheck').checked;
-            
             let rows = Object.entries(data.items).map(([cat, item]) => `
                 <tr>
                     <td style="padding: 12px; border-bottom: 1px solid #eee; font-size: 12px;">${cat}</td>
@@ -284,63 +260,57 @@
             `).join('');
 
             if (isAssemblyChecked) {
-                rows += `
-                    <tr style="background-color: #f0f7ff;">
-                        <td style="padding: 12px; border-bottom: 1px solid #eee; font-size: 12px;">Service</td>
-                        <td style="padding: 12px; border-bottom: 1px solid #eee; font-size: 12px; font-weight: bold;">조립 및 1년 출장 A/S</td>
-                        <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-size: 12px;">1</td>
-                        <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right; font-size: 12px; font-weight: bold; color: #2563eb;">100,000원</td>
-                    </tr>`;
+                rows += `<tr style="background-color: #f0f7ff;">
+                    <td style="padding: 12px;">Service</td><td style="font-weight:bold;">조립 및 출장 A/S</td><td style="text-align:center;">1</td><td style="text-align:right;">100,000원</td>
+                </tr>`;
             }
+            document.getElementById('pdf-items').innerHTML = rows;
 
-            itemsTable.innerHTML = rows;
-
-            const element = document.getElementById('pdf-template');
-            element.style.display = 'block';
-            html2pdf().set({
+            const opt = {
                 margin: 10,
-                filename: `Compatch_견적서_${data.name}.pdf`,
+                filename: `견적서_${data.name}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 3 },
+                html2canvas: { scale: 2, useCORS: true },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            }).from(element).save().then(() => { element.style.display = 'none'; });
+            };
+
+            // PDF 저장 실행
+            try {
+                await html2pdf().set(opt).from(element).save();
+            } catch (err) {
+                console.error("PDF 생성 실패:", err);
+            }
         }
 
-        document.getElementById('consultForm').addEventListener('submit', function(e) {
+        document.getElementById('consultForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const isAssemblyChecked = document.getElementById('assemblyCheck').checked;
             const requestData = {
                 name: document.getElementById('userName').value,
                 phone: document.getElementById('userPhone').value,
                 memo: document.getElementById('userMemo').value,
-                items: selectedItems,
+                items: JSON.parse(JSON.stringify(selectedItems)), // 데이터 깊은 복사
                 totalPrice: document.getElementById('totalDisplay').innerText,
                 type: isAssemblyChecked ? "견적 신청 (조립 포함)" : "견적 신청 (부품만)",
                 timestamp: Date.now()
             };
 
-            db.ref('requests').push(requestData, (error) => {
+            db.ref('requests').push(requestData, async (error) => {
                 if (!error) {
-                    generatePDF(requestData);
+                    await generatePDF(requestData); // PDF 생성이 끝날 때까지 대기
                     alert('신청이 완료되었습니다! 견적서 PDF가 다운로드됩니다.');
-                    setTimeout(() => location.reload(), 2000);
+                    location.reload();
                 }
             });
         });
 
         function openConsultModal() {
-            if (Object.keys(selectedItems).length === 0) {
-                alert("선택된 부품이 없습니다.");
-                return;
-            }
+            if (Object.keys(selectedItems).length === 0) return alert("부품을 선택해주세요.");
             document.getElementById('consultModal').classList.remove('hidden');
             document.getElementById('consultModal').classList.add('flex');
         }
 
-        function closeConsultModal() {
-            document.getElementById('consultModal').classList.add('hidden');
-        }
-
+        function closeConsultModal() { document.getElementById('consultModal').classList.add('hidden'); }
         window.onload = loadParts;
     </script>
 </body>
