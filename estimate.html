@@ -272,14 +272,13 @@ function updateSummary() {
     });
 }
 
-// 1. PDF 인쇄용 함수 (가장 가볍고 확실한 방식)
+// 1. PDF 인쇄 함수 (가장 가볍고 확실한 방식)
 function generatePDF(data) {
     const isAssemblyChecked = document.getElementById('assemblyCheck').checked;
-    
-    // 새 창 열기
     const printWindow = window.open('', '_blank');
+    
     if (!printWindow) {
-        alert("팝업이 차단되었습니다. 주소창 우측의 팝업 차단을 해제해주세요.");
+        alert("팝업이 차단되었습니다. 브라우저 주소창 우측의 '팝업 차단 해제'를 설정해주세요.");
         return;
     }
 
@@ -303,12 +302,11 @@ function generatePDF(data) {
     }
 
     printWindow.document.write(`
-        <!DOCTYPE html>
         <html>
         <head>
             <title>견적서_${data.name}</title>
             <style>
-                body { font-family: 'Malgun Gothic', sans-serif; padding: 30px; line-height: 1.5; }
+                body { font-family: 'Malgun Gothic', sans-serif; padding: 30px; }
                 table { width: 100%; border-collapse: collapse; margin-top: 20px; }
                 th { background: #eee; padding: 10px; border: 1px solid #ddd; }
                 h1 { color: #2563eb; text-align: center; }
@@ -323,62 +321,54 @@ function generatePDF(data) {
                 <p><strong>발행일:</strong> ${new Date().toLocaleDateString()}</p>
             </div>
             <table>
-                <thead>
-                    <tr><th>구분</th><th>제품명</th><th>수량</th><th>금액</th></tr>
-                </thead>
+                <thead><tr><th>구분</th><th>제품명</th><th>수량</th><th>금액</th></tr></thead>
                 <tbody>${rows}</tbody>
             </table>
             <div class="total">최종 합계: ${data.totalPrice}</div>
         </body>
         </html>
     `);
-
     printWindow.document.close();
     
-    // 창이 완전히 로드된 후 인쇄창 띄우기
-    printWindow.onload = function() {
+    // 로드 후 즉시 인쇄창 실행
+    setTimeout(() => {
         printWindow.print();
-        // printWindow.close(); // 인쇄 후 창을 자동으로 닫고 싶으면 주석 해제
-    };
+    }, 500);
 }
 
-// 2. 신청 폼 전송 로직 (중복 실행 방지 및 순서 보장)
+// 2. 통합된 신청 폼 전송 로직
 document.getElementById('consultForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
     const submitBtn = e.target.querySelector('button[type="submit"]');
-    if(submitBtn.disabled) return; 
+    if (submitBtn.disabled) return;
 
-    // 즉시 버튼 비활성화하여 중복 클릭 차단
     submitBtn.disabled = true;
-    submitBtn.innerText = "신청 처리 중...";
+    submitBtn.innerText = "처리 중...";
 
     const isAssemblyChecked = document.getElementById('assemblyCheck').checked;
     
-    // 데이터 복사 (원본 보존)
-    const itemsCopy = JSON.parse(JSON.stringify(selectedItems));
-
+    // 데이터 전송용 객체 생성 (안전한 복사)
     const requestData = {
         name: document.getElementById('userName').value,
         phone: document.getElementById('userPhone').value,
         memo: document.getElementById('userMemo').value,
-        items: itemsCopy,
+        items: JSON.parse(JSON.stringify(selectedItems)),
         totalPrice: document.getElementById('totalDisplay').innerText,
         type: isAssemblyChecked ? "견적 신청 (조립 포함)" : "견적 신청 (부품만)",
         timestamp: Date.now()
     };
 
-    // Firebase 저장
+    // Firebase 전송
     db.ref('requests').push(requestData)
         .then(() => {
-            // 저장이 완료된 후 인쇄창 호출
             generatePDF(requestData);
-            alert('신청이 완료되었습니다! 인쇄 창에서 PDF로 저장하실 수 있습니다.');
+            alert('신청이 완료되었습니다! 인쇄 창에서 PDF로 저장해 주세요.');
             location.reload(); 
         })
-        .catch((err) => {
-            console.error(err);
-            alert('오류가 발생했습니다. 다시 시도해주세요.');
+        .catch((error) => {
+            console.error("Firebase Error:", error);
+            alert('전송 중 오류가 발생했습니다.');
             submitBtn.disabled = false;
             submitBtn.innerText = "신청 완료";
         });
