@@ -275,10 +275,10 @@ function updateSummary() {
 function generatePDF(data) {
     const isAssemblyChecked = document.getElementById('assemblyCheck').checked;
     
-    // PDF로 변환할 임시 컨테이너 생성
+    // PDF용 임시 영역 생성 (화면에는 보이지 않음)
     const element = document.createElement('div');
     element.style.padding = '40px';
-    element.style.width = '210mm'; // A4 사이즈 대응
+    element.style.width = '190mm'; // A4 폭에 맞춤
 
     // 카테고리 분류 기준
     const mainPartsCat = ["CPU", "쿨러", "메인보드", "메모리", "그래픽카드", "SSD", "HDD", "케이스", "파워"];
@@ -287,16 +287,17 @@ function generatePDF(data) {
     let mainTotal = isAssemblyChecked ? ASSEMBLY_FEE : 0;
     let peripheryTotal = 0;
 
-    // 본체 부품 행 생성
+    // 본체 부품 행 생성 (슬래시가 제거된 데이터도 정상 처리)
     let mainRows = Object.entries(data.items)
-        .filter(([cat]) => mainPartsCat.includes(cat))
+        .filter(([cat]) => mainPartsCat.includes(cat) || cat === "SSD_HDD")
         .map(([cat, item]) => {
             mainTotal += item.price * item.count;
-            return `<tr><td style="padding:10px; border:1px solid #e2e8f0;">${cat}</td><td style="padding:10px; border:1px solid #e2e8f0;">${item.name}</td><td style="padding:10px; border:1px solid #e2e8f0; text-align:center;">${item.count}</td><td style="padding:10px; border:1px solid #e2e8f0; text-align:right;">${(item.price * item.count).toLocaleString()}원</td></tr>`;
+            const displayCat = cat === "SSD_HDD" ? "SSD/HDD" : cat;
+            return `<tr><td style="padding:10px; border:1px solid #e2e8f0;">${displayCat}</td><td style="padding:10px; border:1px solid #e2e8f0;">${item.name}</td><td style="padding:10px; border:1px solid #e2e8f0; text-align:center;">${item.count}</td><td style="padding:10px; border:1px solid #e2e8f0; text-align:right;">${(item.price * item.count).toLocaleString()}원</td></tr>`;
         }).join('');
 
     if (isAssemblyChecked) {
-        mainRows += `<tr><td style="padding:10px; border:1px solid #e2e8f0; color:#475569; font-style:italic;">서비스</td><td style="padding:10px; border:1px solid #e2e8f0; color:#475569; font-style:italic;">조립 및 1년 출장 A/S</td><td style="padding:10px; border:1px solid #e2e8f0; text-align:center;">1</td><td style="padding:10px; border:1px solid #e2e8f0; text-align:right;">100,000원</td></tr>`;
+        mainRows += `<tr><td style="padding:10px; border:1px solid #e2e8f0; color:#475569;">서비스</td><td style="padding:10px; border:1px solid #e2e8f0; color:#475569;">조립 및 1년 출장 A/S</td><td style="padding:10px; border:1px solid #e2e8f0; text-align:center;">1</td><td style="padding:10px; border:1px solid #e2e8f0; text-align:right;">100,000원</td></tr>`;
     }
 
     // 주변 기기 행 생성
@@ -307,71 +308,65 @@ function generatePDF(data) {
         return `<tr><td style="padding:10px; border:1px solid #e2e8f0;">${cat}</td><td style="padding:10px; border:1px solid #e2e8f0;">${item.name}</td><td style="padding:10px; border:1px solid #e2e8f0; text-align:center;">${item.count}</td><td style="padding:10px; border:1px solid #e2e8f0; text-align:right;">${(item.price * item.count).toLocaleString()}원</td></tr>`;
     }).join('');
 
-    // HTML 구조 작성
     element.innerHTML = `
-        <div style="font-family: 'Malgun Gothic', sans-serif; color: #333;">
-            <h1 style="color: #2563eb; text-align: center; font-size: 28px; margin-bottom: 30px;">PC 조립 견적서</h1>
-            <div style="margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #2563eb; display: flex; justify-content: space-between;">
+        <div style="font-family: 'Malgun Gothic', sans-serif;">
+            <h1 style="color: #2563eb; text-align: center; margin-bottom: 30px;">PC 조립 견적서</h1>
+            <div style="margin-bottom: 20px; border-bottom: 2px solid #2563eb; padding-bottom: 10px; display: flex; justify-content: space-between;">
                 <span><strong>고객명:</strong> ${data.name}</span>
                 <span><strong>발행일:</strong> ${new Date().toLocaleDateString()}</span>
             </div>
-            
-            <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">[본체 구성 부품]</div>
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
-                <thead><tr style="background: #f8fafc;">
-                    <th style="padding:10px; border:1px solid #e2e8f0;">구분</th><th style="padding:10px; border:1px solid #e2e8f0;">제품명</th><th style="padding:10px; border:1px solid #e2e8f0;">수량</th><th style="padding:10px; border:1px solid #e2e8f0; text-align:right;">금액</th>
-                </tr></thead>
-                <tbody>
-                    ${mainRows || '<tr><td colspan="4" style="text-align:center; padding:20px;">선택된 부품이 없습니다.</td></tr>'}
-                    <tr style="background: #f1f5f9; font-weight: bold;"><td colspan="3" style="padding:10px; border:1px solid #e2e8f0; text-align:right;">본체 합계</td><td style="padding:10px; border:1px solid #e2e8f0; text-align:right;">${mainTotal.toLocaleString()}원</td></tr>
-                </tbody>
+            <div style="font-weight: bold; margin-bottom: 10px;">[본체 구성 부품]</div>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <thead style="background: #f8fafc;">
+                    <tr><th style="border:1px solid #e2e8f0; padding:8px;">구분</th><th style="border:1px solid #e2e8f0; padding:8px;">제품명</th><th style="border:1px solid #e2e8f0; padding:8px;">수량</th><th style="border:1px solid #e2e8f0; padding:8px; text-align:right;">금액</th></tr>
+                </thead>
+                <tbody>${mainRows}</tbody>
+                <tfoot><tr style="background:#f1f5f9; font-weight:bold;"><td colspan="3" style="border:1px solid #e2e8f0; padding:8px; text-align:right;">본체 합계</td><td style="border:1px solid #e2e8f0; padding:8px; text-align:right;">${mainTotal.toLocaleString()}원</td></tr></tfoot>
             </table>
-
             ${periRows ? `
-            <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">[주변 기기 및 기타]</div>
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
-                <thead><tr style="background: #f8fafc;">
-                    <th style="padding:10px; border:1px solid #e2e8f0;">구분</th><th style="padding:10px; border:1px solid #e2e8f0;">제품명</th><th style="padding:10px; border:1px solid #e2e8f0;">수량</th><th style="padding:10px; border:1px solid #e2e8f0; text-align:right;">금액</th>
-                </tr></thead>
-                <tbody>
-                    ${periRows}
-                    <tr style="background: #f1f5f9; font-weight: bold;"><td colspan="3" style="padding:10px; border:1px solid #e2e8f0; text-align:right;">주변기기 합계</td><td style="padding:10px; border:1px solid #e2e8f0; text-align:right;">${peripheryTotal.toLocaleString()}원</td></tr>
-                </tbody>
+            <div style="font-weight: bold; margin-bottom: 10px;">[주변 기기 및 기타]</div>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead style="background: #f8fafc;">
+                    <tr><th style="border:1px solid #e2e8f0; padding:8px;">구분</th><th style="border:1px solid #e2e8f0; padding:8px;">제품명</th><th style="border:1px solid #e2e8f0; padding:8px;">수량</th><th style="border:1px solid #e2e8f0; padding:8px; text-align:right;">금액</th></tr>
+                </thead>
+                <tbody>${periRows}</tbody>
+                <tfoot><tr style="background:#f1f5f9; font-weight:bold;"><td colspan="3" style="border:1px solid #e2e8f0; padding:8px; text-align:right;">주변기기 합계</td><td style="border:1px solid #e2e8f0; padding:8px; text-align:right;">${peripheryTotal.toLocaleString()}원</td></tr></tfoot>
             </table>` : ''}
-
-            <div style="background: #2563eb; color: white; padding: 20px; border-radius: 12px; text-align: right; margin-top: 40px;">
-                <span style="font-size: 16px; opacity: 0.9;">최종 합계 금액 (VAT 포함)</span>
-                <span style="font-size: 26px; font-weight: 900; margin-left: 15px;">${data.totalPrice}</span>
+            <div style="margin-top: 30px; background: #2563eb; color: white; padding: 20px; border-radius: 10px; text-align: right;">
+                <span style="font-size: 20px; font-weight: bold;">최종 합계: ${data.totalPrice}</span>
             </div>
         </div>
     `;
 
-    // html2pdf 옵션 설정 및 실행
     const opt = {
         margin: 10,
-        filename: `PC견적서_${data.name}.pdf`,
+        filename: `견적서_${data.name}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
+        html2canvas: { scale: 2 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    // PDF 저장 실행
     html2pdf().set(opt).from(element).save();
 }
 
-// 2. 폼 제출 이벤트 (Firebase 저장 후 PDF 자동 다운로드)
+// 2. 상담 신청 폼 제출 로직 (데이터 정제 포함)
 document.getElementById('consultForm').addEventListener('submit', async function(e) {
     e.preventDefault();
-    
     const submitBtn = e.target.querySelector('button[type="submit"]');
-    if (submitBtn.disabled) return;
+    
+    // 데이터 정제: Firebase 오류 방지를 위해 키값의 '/'를 '_'로 변경
+    const sanitizedItems = {};
+    Object.entries(selectedItems).forEach(([key, value]) => {
+        const safeKey = key.replace(/\//g, '_'); 
+        sanitizedItems[safeKey] = value;
+    });
 
     const isAssemblyChecked = document.getElementById('assemblyCheck').checked;
     const requestData = {
         name: document.getElementById('userName').value,
         phone: document.getElementById('userPhone').value,
         memo: document.getElementById('userMemo').value,
-        items: JSON.parse(JSON.stringify(selectedItems)),
+        items: sanitizedItems,
         totalPrice: document.getElementById('totalDisplay').innerText,
         type: isAssemblyChecked ? "견적 신청 (조립 포함)" : "견적 신청 (부품만)",
         timestamp: Date.now()
@@ -381,23 +376,14 @@ document.getElementById('consultForm').addEventListener('submit', async function
     submitBtn.innerText = "처리 중...";
 
     try {
-        // Firebase에 데이터 저장
         await db.ref('requests').push(requestData);
+        alert('신청이 완료되었습니다! 견적서 PDF 저장을 시작합니다.');
         
-        // 사용자에게 알림
-        alert('신청이 완료되었습니다! 견적서 PDF 파일 다운로드를 시작합니다.');
+        generatePDF(requestData); // 정제된 데이터로 PDF 생성
         
-        // PDF 자동 생성 및 다운로드 호출
-        generatePDF(requestData);
-        
-        // 잠시 후 페이지 새로고침 (다운로드 시간을 벌기 위해 2초 후 실행)
-        setTimeout(() => {
-            location.reload();
-        }, 2000);
-
+        setTimeout(() => { location.reload(); }, 3000); // 저장 시간을 위해 3초 후 리로드
     } catch (error) {
-        console.error("전송 오류:", error);
-        alert('전송 중 오류가 발생했습니다: ' + error.message);
+        alert('오류 발생: ' + error.message);
         submitBtn.disabled = false;
         submitBtn.innerText = "신청 완료";
     }
