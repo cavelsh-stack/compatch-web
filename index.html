@@ -162,7 +162,7 @@
             
             <div class="text-center w-full">
                 <div class="text-xl font-black text-gray-900 mb-1">웰디자인 이상호</div>
-                <div class="text-blue-600 font-bold text-sm mb-5">대표 / 담당자</div>
+                <div class="text-blue-600 font-bold text-sm mb-5">담당자/ 컴퓨터 판매및 수리</div>
                 
                 <div class="space-y-3 text-sm text-gray-600 bg-gray-50 p-4 rounded-2xl text-left">
                     <p class="flex items-center gap-3 font-medium">
@@ -193,7 +193,7 @@
             const vCardData = [
                 "BEGIN:VCARD",
                 "VERSION:3.0",
-                "FN:이상호 (웰디자인)",
+                "FN:이상호 (컴퓨터 수리)",
                 "ORG:웰디자인",
                 "TEL;TYPE=CELL:010-9590-9782",
                 "EMAIL:cavelsh@gmail.com",
@@ -220,7 +220,7 @@
     // 이미지 로드 실패 시 백업 API로 전환
     function handleQrError(img) {
         console.log("Primary QR API failed, switching to backup...");
-        const vCardData = "BEGIN:VCARD\nVERSION:3.0\nFN:이상호\nTEL:010-9590-9782\nEND:VCARD";
+        const vCardData = "BEGIN:VCARD\nVERSION:3.0\nFN:이상호 (웰디자인:컴퓨터 수리)\nTEL:010-9590-9782\nEND:VCARD";
         // 백업용 QR 생성 서비스 (goqr.me)
         img.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(vCardData)}`;
     }
