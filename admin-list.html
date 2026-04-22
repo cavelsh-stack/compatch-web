@@ -23,7 +23,6 @@
                     <a href="estimate.html" class="hover:text-blue-600">컴퓨터 견적내기</a>
                     <a href="trade-in.html" class="hover:text-blue-600">중고 판매</a>
                     <a href="archive.html" class="hover:text-blue-600">자료실</a>
-                    <a href="qna.html" class="hover:text-blue-600">Q&A</a>
                     <a href="admin-list.html" class="hover:text-blue-600">관리자</a>
             </div>
         </div>
@@ -57,7 +56,7 @@
 </div>
 
     <main class="max-w-7xl mx-auto px-4 py-10 space-y-12">
-       
+        
         <section>
             <div class="flex justify-between items-end mb-6">
                 <h2 class="text-2xl font-black flex items-center gap-2">
@@ -68,11 +67,6 @@
             <div id="requestAdminList" class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 </div>
         </section>
-
-       <section id="section-qna" class="hidden">
-        <h2 class="text-2xl font-black mb-6">Q&A 질문 및 답변</h2>
-        <div id="admin-qna-list" class="space-y-6"></div>
-       </section>
 
         <hr class="border-gray-200">
 
@@ -480,132 +474,8 @@ function loadUsedProductsAdmin() {
         });
     }
 
-// 3. Q&A 관리 로직 (신규)
-    function loadAdminQnA() {
-        db.ref('qna').orderByChild('timestamp').on('value', (snapshot) => {
-            const data = snapshot.val();
-            const container = document.getElementById('admin-qna-list');
-            if(!data) {
-                container.innerHTML = "<p class='text-center py-20 text-gray-400'>문의 내역이 없습니다.</p>";
-                return;
-            }
+<button onclick="switchTab('qna')" id="btn-qna" class="tab-btn py-5 text-gray-500">Q&A 관리</button>
 
-            let html = "";
-            const keys = Object.keys(data).reverse();
-
-            keys.forEach(id => {
-                const item = data[id];
-                const date = new Date(item.timestamp).toLocaleString();
-                html += `
-                    <div class="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <span class="text-[10px] font-black px-2 py-1 rounded-full uppercase ${item.status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}">
-                                    ${item.status === 'completed' ? '답변완료' : '답변대기'}
-                                </span>
-                                ${item.isPrivate ? '<span class="ml-2 text-[10px] text-red-500 font-bold tracking-tight">[비밀글]</span>' : ''}
-                                <h3 class="text-xl font-bold mt-2 text-gray-900">${item.title}</h3>
-                                <p class="text-xs text-gray-400 font-medium mt-1">작성자: ${item.author} | 비번: ${item.pw} | ${date}</p>
-                            </div>
-                            <button onclick="deleteQnA('${id}')" class="text-xs text-red-400 font-bold hover:text-red-600">삭제</button>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-5 rounded-2xl mb-6 text-gray-700 whitespace-pre-wrap text-sm border border-gray-100">
-                            <div class="text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Question</div>
-                            ${item.content}
-                        </div>
-
-                        <div class="space-y-3">
-                            <div class="text-[10px] font-bold text-blue-500 uppercase ml-1 tracking-widest">Answer</div>
-                            <textarea id="ans-${id}" class="w-full h-32 p-4 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all" placeholder="여기에 답변을 작성하세요...">${item.answer || ''}</textarea>
-                            <button onclick="submitAnswer('${id}')" class="w-full bg-gray-900 text-white py-4 rounded-2xl font-bold text-sm hover:bg-blue-600 transition-all shadow-lg shadow-gray-100">
-                                ${item.status === 'completed' ? '답변 수정하기' : '답변 등록하기'}
-                            </button>
-                        </div>
-                    </div>
-                `;
-            });
-            container.innerHTML = html;
-        });
-    }
-
-    function submitAnswer(id) {
-        const answer = document.getElementById(`ans-${id}`).value;
-        if(!answer) return alert("답변 내용을 입력하세요.");
-
-        db.ref(`qna/${id}`).update({
-            answer: answer,
-            status: "completed"
-        }).then(() => alert("답변이 저장되었습니다."));
-    }
-
-    function deleteQnA(id) {
-        if(confirm("이 문의글을 삭제하시겠습니까?")) {
-            db.ref(`qna/${id}`).remove();
-        }
-    }
-
-    // 4. 기존 견적 내역 로직 (유지)
-    function loadRequests() {
-        db.ref('requests').orderByChild('timestamp').on('value', (snapshot) => {
-            const data = snapshot.val();
-            const container = document.getElementById('request-container');
-            if(!data) { container.innerHTML = "<p class='text-gray-400 text-center py-20'>신청 내역이 없습니다.</p>"; return; }
-
-            let html = "";
-            const keys = Object.keys(data).reverse();
-            keys.forEach(key => {
-                const req = data[key];
-                const date = new Date(req.timestamp).toLocaleString();
-                html += `
-                    <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <span class="text-[10px] font-black bg-blue-100 text-blue-600 px-2 py-1 rounded-full uppercase">${req.type || '견적신청'}</span>
-                                <h3 class="text-lg font-bold mt-1">${req.userName} (${req.userPhone})</h3>
-                                <p class="text-xs text-gray-400">${date}</p>
-                            </div>
-                            <button onclick="deleteRequest('${key}')" class="text-red-400 text-xs font-bold">내역삭제</button>
-                        </div>
-                        <div class="text-sm text-gray-600 bg-gray-50 p-4 rounded-xl">
-                            ${Object.values(req.items).map(i => `${i.name} x${i.count}`).join(' / ')}
-                            <div class="mt-2 pt-2 border-t font-bold text-blue-600">합계: ${req.totalPrice}</div>
-                        </div>
-                    </div>
-                `;
-            });
-            container.innerHTML = html;
-        });
-    }
-
-    function deleteRequest(key) { if(confirm("삭제하시겠습니까?")) db.ref(`requests/${key}`).remove(); }
-
-    // 5. 로그인 및 인증 시스템 (기존 유지)
-    function checkAdmin() {
-        const pw = document.getElementById('adminPw').value;
-        if(pw === "0927") {
-            sessionStorage.setItem("adminLoggedIn", "true");
-            alert("관리자 인증 성공");
-            location.reload();
-        } else {
-            alert("암호가 틀렸습니다.");
-        }
-    }
-
-    function logout() {
-        sessionStorage.removeItem("adminLoggedIn");
-        location.href = "index.html";
-    }
-
-    window.onload = () => {
-        if (sessionStorage.getItem("adminLoggedIn") === "true") {
-            document.getElementById('admin-menu').classList.remove('hidden');
-            document.getElementById('logout-btn').classList.remove('hidden');
-            loadRequests(); 
-        } else {
-            document.getElementById('loginModal').classList.replace('hidden', 'flex');
-        }
-    };
 
 // window.onload 에 추가
 window.onload = () => {
