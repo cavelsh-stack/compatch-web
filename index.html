@@ -220,7 +220,7 @@
     // 이미지 로드 실패 시 백업 API로 전환
     function handleQrError(img) {
         console.log("Primary QR API failed, switching to backup...");
-        const vCardData = "BEGIN:VCARD\nVERSION:3.0\nFN:이상호 (웰디자인:컴퓨터 수리)\nTEL:010-9590-9782\nEND:VCARD";
+        const vCardData = "BEGIN:VCARD\nVERSION:3.0\nFN:이상호 (웰디자인:컴퓨터 수리)\nTEL:010-9590-9782\nEMAIL:cavelsh@gmail.com\nURL:https://cavelsh.github.io/web\nEND:VCARD";
         // 백업용 QR 생성 서비스 (goqr.me)
         img.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(vCardData)}`;
     }
