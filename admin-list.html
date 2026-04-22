@@ -162,6 +162,58 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+
+// switchTab 함수 내에 추가
+if(tabId === 'qna') loadAdminQnA();
+
+// Q&A 관련 함수들
+function loadAdminQnA() {
+    db.ref('qna').orderByChild('timestamp').on('value', (snapshot) => {
+        const data = snapshot.val();
+        const container = document.getElementById('admin-qna-list');
+        if(!data) {
+            container.innerHTML = "<p class='text-center py-20 text-gray-400'>문의 내역이 없습니다.</p>";
+            return;
+        }
+
+        let html = "";
+        const keys = Object.keys(data).reverse();
+
+        keys.forEach(id => {
+            const item = data[id];
+            const date = new Date(item.timestamp).toLocaleString();
+            html += `
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-4">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <span class="text-[10px] font-black px-2 py-1 rounded-full ${item.status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}">
+                                ${item.status === 'completed' ? '답변완료' : '답변대기'}
+                            </span>
+                            <h3 class="text-lg font-bold mt-2">${item.title}</h3>
+                            <p class="text-xs text-gray-400">작성자: ${item.author} | 비번: ${item.pw} | ${date}</p>
+                        </div>
+                        <button onclick="deleteQnA('${id}')" class="text-red-400 text-xs font-bold">삭제</button>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-xl mb-4 text-sm">${item.content}</div>
+                    <textarea id="ans-${id}" class="w-full p-4 bg-white border rounded-xl text-sm" placeholder="답변을 입력하세요">${item.answer || ''}</textarea>
+                    <button onclick="submitAnswer('${id}')" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold mt-2">답변 등록/수정</button>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    });
+}
+
+function submitAnswer(id) {
+    const answer = document.getElementById(`ans-${id}`).value;
+    db.ref(`qna/${id}`).update({ answer: answer, status: "completed" })
+      .then(() => alert("답변이 저장되었습니다."));
+}
+
+function deleteQnA(id) {
+    if(confirm("삭제하시겠습니까?")) db.ref(`qna/${id}`).remove();
+}
+
 let editingPartKey = null;
 
         // [복구] 1. 고객 견적/판매 신청 내역 로드 및 상세 부품 표시
