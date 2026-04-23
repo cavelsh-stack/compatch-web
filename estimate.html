@@ -3,13 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>견적 내기 | Well Design</title>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <script type="text/javascript">
-      (function(){
-      emailjs.init("A0QICx_iR8TEB3-3c"); // EmailJS에서 발급받은 키
-      })();
-    </script>
+    <title>실시간 견적 | Well Design</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -379,62 +373,32 @@ function generatePDF(data) {
     setTimeout(() => { printWindow.print(); }, 500);
 }
 
-// 상담 신청 버튼 이벤트
-const submitBtn = document.getElementById('submitBtn');
-if (submitBtn) {
-    submitBtn.addEventListener('click', async () => {
-        // 데이터 수집
-        const isAssemblyChecked = document.getElementById('assemblyCheck')?.checked;
-        const requestData = {
-            name: document.getElementById('userName').value,
-            phone: document.getElementById('userPhone').value,
-            memo: document.getElementById('userMemo').value,
-            items: JSON.parse(JSON.stringify(selectedItems)),
-            totalPrice: document.getElementById('totalDisplay').innerText,
-            type: isAssemblyChecked ? "견적 신청 (조립 포함)" : "견적 신청 (부품만)",
-            timestamp: Date.now()
-        };
+// 2. 통합된 신청 폼 전송 로직
+document.getElementById('consultForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn.disabled) return;
 
-        // 입력 검증
-        if (!requestData.name || !requestData.phone) {
-            alert("성함과 연락처를 입력해주세요.");
-            return;
-        }
+    // 1. 데이터 준비
+    const isAssemblyChecked = document.getElementById('assemblyCheck').checked;
+    const requestData = {
+        name: document.getElementById('userName').value,
+        phone: document.getElementById('userPhone').value,
+        memo: document.getElementById('userMemo').value,
+        items: JSON.parse(JSON.stringify(selectedItems)),
+        totalPrice: document.getElementById('totalDisplay').innerText,
+        type: isAssemblyChecked ? "견적 신청 (조립 포함)" : "견적 신청 (부품만)",
+        timestamp: Date.now()
+    };
 
-        submitBtn.disabled = true;
-        submitBtn.innerText = "처리 중...";
+    submitBtn.disabled = true;
+    submitBtn.innerText = "처리 중...";
 
-        try {
-            // [A] Firebase 데이터베이스 저장 (admin-list에서 확인 가능)
-            await db.ref('requests').push(requestData);
-
-            // [B] EmailJS를 통한 이메일 발송
-            const emailParams = {
-                from_name: requestData.name,
-                phone: requestData.phone,
-                type: requestData.type,
-                total_price: requestData.totalPrice,
-                memo: requestData.memo,
-                // 선택한 부품 리스트를 문자열로 변환
-                items_summary: Object.values(requestData.items).map(i => `${i.name} (${i.count}개)`).join(", ")
-            };
-
-            await emailjs.send('service_ae3ooe5', 'template_1snauoj', emailParams);
-
-            // [C] 성공 처리
-            alert('신청이 완료되었습니다! 확인을 누르시면 견적서 인쇄창이 열립니다.');
-            generatePDF(requestData); // PDF 출력
-            location.reload(); 
-
-        } catch (error) {
-            console.error("전송 오류:", error);
-            alert('전송 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-            submitBtn.disabled = false;
-            submitBtn.innerText = "신청 완료";
-        }
-    });
-}
-
+    try {
+        // 2. Firebase 전송 (await를 사용하여 명확하게 대기)
+        await db.ref('requests').push(requestData);
+        
         // 3. 성공 알림을 먼저 띄워 사용자 클릭을 유도 (팝업 차단 방지)
         alert('신청이 완료되었습니다! 확인을 누르시면 견적서 인쇄창이 열립니다.');
         
