@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>실시간 견적 | Well Design</title>
+    <title>견적 내기 | Well Design</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+      (function(){
+      emailjs.init("A0QICx_iR8TEB3-3c"); // EmailJS에서 발급받은 키
+      })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -399,6 +405,23 @@ document.getElementById('consultForm').addEventListener('submit', async function
         // 2. Firebase 전송 (await를 사용하여 명확하게 대기)
         await db.ref('requests').push(requestData);
         
+    // 이메일로 보낼 데이터 정리
+    const emailParams = {
+    from_name: document.getElementById('userName').value,
+    phone: document.getElementById('userPhone').value,
+    total_price: document.getElementById('totalDisplay').innerText,
+    memo: document.getElementById('userMemo').value,
+    items: JSON.stringify(selectedItems) // 선택한 부품 목록
+    };
+
+    // EmailJS 발송
+      emailjs.send('service_ae3ooe5', 'template_1snauoj', emailParams)
+    .then(function() {
+          console.log('이메일 발송 성공!');
+        }, function(error) {
+          console.log('이메일 발송 실패...', error);
+        });
+
         // 3. 성공 알림을 먼저 띄워 사용자 클릭을 유도 (팝업 차단 방지)
         alert('신청이 완료되었습니다! 확인을 누르시면 견적서 인쇄창이 열립니다.');
         
