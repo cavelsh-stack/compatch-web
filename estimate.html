@@ -6,7 +6,14 @@
     <title>실시간 견적 | Well Design</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+   (function(){
+      // EmailJS에서 발급받은 Public Key를 입력하세요
+      emailjs.init("A0QICx_iR8TEB3-3c"); 
+      })();
+   </script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', 'Malgun Gothic', sans-serif; }
         .sticky-summary { position: sticky; top: 5rem; }
@@ -380,36 +387,54 @@ document.getElementById('consultForm').addEventListener('submit', async function
     const submitBtn = e.target.querySelector('button[type="submit"]');
     if (submitBtn.disabled) return;
 
-    // 1. 데이터 준비
-    const isAssemblyChecked = document.getElementById('assemblyCheck').checked;
+    // 데이터 준비
+    const name = document.getElementById('userName').value;
+    const phone = document.getElementById('userPhone').value;
+    const memo = document.getElementById('userMemo').value;
+    const totalPrice = document.getElementById('totalDisplay').innerText;
+    
+    // 선택된 아이템 목록을 문자열로 변환 (이메일 본문용)
+    const itemDetails = Object.entries(selectedItems)
+        .map(([cat, item]) => `${cat}: ${item.name} (${item.count}개)`)
+        .join('\n');
+
     const requestData = {
-        name: document.getElementById('userName').value,
-        phone: document.getElementById('userPhone').value,
-        memo: document.getElementById('userMemo').value,
-        items: JSON.parse(JSON.stringify(selectedItems)),
-        totalPrice: document.getElementById('totalDisplay').innerText,
-        type: isAssemblyChecked ? "견적 신청 (조립 포함)" : "견적 신청 (부품만)",
-        timestamp: Date.now()
+        name: name,
+        phone: phone,
+        memo: memo,
+        items_summary: itemDetails, // 이메일에 표시될 요약
+        totalPrice: totalPrice,
+        timestamp: new Date().toLocaleString()
     };
 
     submitBtn.disabled = true;
     submitBtn.innerText = "처리 중...";
 
     try {
-        // 2. Firebase 전송 (await를 사용하여 명확하게 대기)
-        await db.ref('requests').push(requestData);
+        // 1. Firebase 데이터 저장
+        await db.ref('requests').push({
+            ...requestData,
+            raw_items: selectedItems // 기존 DB 구조 유지
+        });
+
+        // 2. EmailJS를 통한 이메일 발송
+        // SERVICE_ID와 TEMPLATE_ID는 EmailJS 대시보드에서 생성한 값을 사용하세요.
+        await emailjs.send("service_ae3ooe5", "template_1snauoj", {
+            from_name: name,
+            contact_number: phone,
+            order_details: itemDetails,
+            total_amount: totalPrice,
+            message: memo,
+            to_email: "cavelsh@gmail.com"
+        });
         
-        // 3. 성공 알림을 먼저 띄워 사용자 클릭을 유도 (팝업 차단 방지)
-        alert('신청이 완료되었습니다! 확인을 누르시면 견적서 인쇄창이 열립니다.');
-        
-        // 4. PDF 생성 호출
-        generatePDF(requestData);
-        
-        // 5. 페이지 새로고침
+        alert('신청 및 이메일 전송이 완료되었습니다!');
+        generatePDF({...requestData, items: selectedItems});
         location.reload(); 
+
     } catch (error) {
-        console.error("전송 오류 상세:", error);
-        alert('전송 중 오류가 발생했습니다: ' + error.message);
+        console.error("오류 발생:", error);
+        alert('처리 중 오류가 발생했습니다.');
         submitBtn.disabled = false;
         submitBtn.innerText = "신청 완료";
     }
