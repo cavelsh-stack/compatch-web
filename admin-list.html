@@ -58,6 +58,38 @@
 
     <main class="max-w-7xl mx-auto px-4 py-10 space-y-12">
 
+<button onclick="showSection('galleryAdmin')" class="hover:text-blue-600">갤러리 관리</button>
+
+<section id="galleryAdmin" class="admin-section hidden">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">갤러리 관리</h2>
+        <button onclick="openGalleryModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold">+ 새 사례 등록</button>
+    </div>
+    <div id="adminGalleryList" class="grid grid-cols-1 gap-4">
+        </div>
+</section>
+
+<div id="galleryModal" class="fixed inset-0 bg-black/50 hidden z-[60] items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-md p-8">
+        <h3 id="galleryModalTitle" class="text-xl font-bold mb-4">갤러리 등록</h3>
+        <input type="hidden" id="galleryKey">
+        <div class="space-y-4">
+            <input type="text" id="gTitle" placeholder="제목 (예: 고사양 게이밍 PC 조립)" class="w-full p-3 border rounded-xl">
+            <select id="gCategory" class="w-full p-3 border rounded-xl">
+                <option value="조립">신품 조립</option>
+                <option value="수리">업그레이드/수리</option>
+                <option value="청소">클리닝/정비</option>
+            </select>
+            <input type="text" id="gImgUrl" placeholder="이미지 URL" class="w-full p-3 border rounded-xl">
+            <textarea id="gDesc" placeholder="상세 설명" class="w-full p-3 border rounded-xl h-32"></textarea>
+            <div class="flex gap-2">
+                <button onclick="saveGallery()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold">저장</button>
+                <button onclick="closeGalleryModal()" class="flex-1 bg-gray-100 py-3 rounded-xl font-bold">취소</button>
+            </div>
+        </div>
+    </div>
+</div>
+
     <section class="mt-12">
     <div class="flex justify-between items-end mb-6">
     <h2 class="text-2xl font-black flex items-center gap-2">
@@ -167,6 +199,92 @@
         const db = firebase.database();
 
 let editingPartKey = null;
+
+// 갤러리 로드 함수
+function loadGalleryAdmin() {
+    db.ref('gallery').on('value', (snapshot) => {
+        const data = snapshot.val();
+        const list = document.getElementById('adminGalleryList');
+        if(!data) { list.innerHTML = "등록된 데이터가 없습니다."; return; }
+
+        let html = '';
+        Object.keys(data).reverse().forEach(key => {
+            const item = data[key];
+            html += `
+                <div class="bg-white p-4 rounded-xl border flex items-center gap-4">
+                    <img src="${item.imgUrl}" class="w-20 h-20 object-cover rounded-lg">
+                    <div class="flex-1">
+                        <div class="font-bold">${item.title}</div>
+                        <div class="text-sm text-gray-500">${item.category}</div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="editGallery('${key}')" class="text-sm text-blue-600 font-bold">수정</button>
+                        <button onclick="deleteGallery('${key}')" class="text-sm text-red-600 font-bold">삭제</button>
+                    </div>
+                </div>
+            `;
+        });
+        list.innerHTML = html;
+    });
+}
+
+// 저장/수정 함수
+function saveGallery() {
+    const key = document.getElementById('galleryKey').value;
+    const data = {
+        title: document.getElementById('gTitle').value,
+        category: document.getElementById('gCategory').value,
+        imgUrl: document.getElementById('gImgUrl').value,
+        desc: document.getElementById('gDesc').value,
+        timestamp: Date.now()
+    };
+
+    if(key) {
+        db.ref(`gallery/${key}`).update(data).then(() => {
+            alert("수정되었습니다.");
+            closeGalleryModal();
+        });
+    } else {
+        db.ref('gallery').push(data).then(() => {
+            alert("등록되었습니다.");
+            closeGalleryModal();
+        });
+    }
+}
+
+// 삭제 함수
+function deleteGallery(key) {
+    if(confirm("정말 삭제하시겠습니까?")) {
+        db.ref(`gallery/${key}`).remove().then(() => alert("삭제되었습니다."));
+    }
+}
+
+// 수정 시 모달 채우기
+function editGallery(key) {
+    db.ref(`gallery/${key}`).once('value', (snap) => {
+        const data = snap.val();
+        document.getElementById('galleryKey').value = key;
+        document.getElementById('gTitle').value = data.title;
+        document.getElementById('gCategory').value = data.category;
+        document.getElementById('gImgUrl').value = data.imgUrl;
+        document.getElementById('gDesc').value = data.desc;
+        document.getElementById('galleryModalTitle').innerText = "사례 수정";
+        document.getElementById('galleryModal').classList.replace('hidden', 'flex');
+    });
+}
+
+function openGalleryModal() {
+    document.getElementById('galleryKey').value = "";
+    document.getElementById('gTitle').value = "";
+    document.getElementById('gImgUrl').value = "";
+    document.getElementById('gDesc').value = "";
+    document.getElementById('galleryModalTitle').innerText = "새 사례 등록";
+    document.getElementById('galleryModal').classList.replace('hidden', 'flex');
+}
+
+function closeGalleryModal() {
+    document.getElementById('galleryModal').classList.replace('flex', 'hidden');
+}
 
         // [복구] 1. 고객 견적/판매 신청 내역 로드 및 상세 부품 표시
         function loadRequests() {
