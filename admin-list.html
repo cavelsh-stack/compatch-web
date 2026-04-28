@@ -201,6 +201,19 @@
 let editingPartKey = null;
 
 // 갤러리 로드 함수
+function showSection(sectionId) {
+    // 모든 관리 섹션을 숨김 (관리자 페이지 내의 다른 section들 포함)
+    document.querySelectorAll('.admin-section, main > section').forEach(sec => {
+        sec.classList.add('hidden');
+    });
+    // 선택한 섹션만 표시
+    const target = document.getElementById(sectionId);
+    if(target) {
+        target.classList.remove('hidden');
+        if(sectionId === 'galleryAdmin') loadGalleryAdmin(); // 갤러리 탭 클릭 시 로드
+    }
+}
+
 function loadGalleryAdmin() {
     db.ref('gallery').on('value', (snapshot) => {
         const data = snapshot.val();
@@ -734,13 +747,13 @@ window.onload = () => {
     updateAuthUI();
 
     if (isLoggedIn) {
-        if(typeof loadRequests === 'function') loadRequests();
-        if(typeof loadArchiveAdmin === 'function') loadArchiveAdmin();
-        if(typeof loadUsedProductsAdmin === 'function') loadUsedProductsAdmin();
-        if(typeof loadPartsAdmin === 'function') loadPartsAdmin();
-        
-        // 이 줄이 반드시 추가되어야 Q&A를 불러옵니다.
-        loadAdminQnA(); 
+        // 초기 섹션 설정 (예: 견적 내역 우선 표시)
+        loadRequests();      
+        loadArchiveAdmin();  
+        loadUsedProductsAdmin();
+        loadPartsAdmin();
+        loadAdminQnA();
+        loadGalleryAdmin(); // 갤러리 데이터 미리 로드
     } else {
         showLoginModal();
     }
