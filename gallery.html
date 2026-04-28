@@ -27,9 +27,14 @@
 </nav>
     <main class="max-w-7xl mx-auto px-4 py-12">
         <h1 class="text-3xl font-black mb-8">수리/조립 갤러리</h1>
-        <div id="galleryContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            </div>
-    </main>
+<div id="imageModal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/90 p-4 backdrop-blur-sm cursor-zoom-out" onclick="closeImageModal()">
+    <div class="relative max-w-5xl w-full flex items-center justify-center" onclick="event.stopPropagation()">
+        <img id="modalImg" src="" class="max-w-full max-h-[90vh] rounded-lg shadow-2xl">
+        <button onclick="closeImageModal()" class="absolute -top-12 right-0 text-white text-3xl font-bold hover:text-gray-300">✕</button>
+    </div>
+</div>
+    
+</main>
 
     <script>
         // Firebase 설정 (기존 소스의 config 입력)
@@ -39,33 +44,51 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        function loadGallery() {
-            db.ref('gallery').on('value', (snapshot) => {
-                const data = snapshot.val();
-                const container = document.getElementById('galleryContainer');
-                if(!data) {
-                    container.innerHTML = "<p>등록된 사례가 없습니다.</p>";
-                    return;
-                }
-                
-                let html = '';
-                Object.keys(data).reverse().forEach(key => {
-                    const item = data[key];
-                    html += `
-                        <div class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                            <img src="${item.imgUrl}" alt="${item.title}" class="w-full h-64 object-cover">
-                            <div class="p-6">
-                                <span class="text-blue-600 text-xs font-bold uppercase">${item.category}</span>
-                                <h3 class="text-xl font-bold mt-2">${item.title}</h3>
-                                <p class="text-gray-600 mt-2 text-sm">${item.desc}</p>
-                                <p class="text-gray-400 text-xs mt-4">${new Date(item.timestamp).toLocaleDateString()}</p>
-                            </div>
-                        </div>
-                    `;
-                });
-                container.innerHTML = html;
-            });
+function loadGallery() {
+    db.ref('gallery').on('value', (snapshot) => {
+        const data = snapshot.val();
+        const container = document.getElementById('galleryContainer');
+        if(!data) {
+            container.innerHTML = "<p>등록된 사례가 없습니다.</p>";
+            return;
         }
+        
+        let html = '';
+        Object.keys(data).reverse().forEach(key => {
+            const item = data[key];
+            html += `
+                <div class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer" onclick="openImageModal('${item.imgUrl}')">
+                    <img src="${item.imgUrl}" alt="${item.title}" class="w-full h-64 object-cover hover:scale-105 transition-transform duration-300">
+                    <div class="p-6">
+                        <span class="text-blue-600 text-xs font-bold uppercase">${item.category}</span>
+                        <h3 class="text-xl font-bold mt-2">${item.title}</h3>
+                        <p class="text-gray-600 mt-2 text-sm">${item.desc}</p>
+                        <p class="text-gray-400 text-xs mt-4">${new Date(item.timestamp).toLocaleDateString()}</p>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    });
+}
+
+// 모달 제어 함수 추가
+function openImageModal(url) {
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImg');
+    modalImg.src = url;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden'; // 스크롤 방지
+}
+
+function closeImageModal() {
+    const modal = document.getElementById('imageModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = ''; // 스크롤 복구
+}
+
         window.onload = loadGallery;
     </script>
 </body>
