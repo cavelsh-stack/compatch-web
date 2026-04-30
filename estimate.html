@@ -430,6 +430,7 @@ document.getElementById('consultForm').addEventListener('submit', async function
     const isAssemblyChecked = document.getElementById('assemblyCheck').checked;
 
     // 2. 중요: 부품 리스트를 이메일용 텍스트로 변환
+    // 예: "CPU: Intel i7 (1개) / 메인보드: ASUS B760 (1개) ..."
     let itemDetails = Object.entries(selectedItems)
         .map(([cat, item]) => `${cat}: ${item.name} (${item.count}개) - ${(item.price * item.count).toLocaleString()}원`)
         .join('\n');
@@ -442,7 +443,7 @@ document.getElementById('consultForm').addEventListener('submit', async function
         name: name,
         phone: phone,
         memo: memo,
-        items_list: itemDetails, 
+        items_list: itemDetails, // 이 변수가 이메일 본문에 들어갈 리스트입니다.
         total_price: totalPrice,
         timestamp: new Date().toLocaleString()
     };
@@ -451,15 +452,17 @@ document.getElementById('consultForm').addEventListener('submit', async function
     submitBtn.innerText = "전송 중...";
 
     try {
+        // Firebase 저장
         await db.ref('requests').push({
             ...requestData,
             original_items: selectedItems
         });
 
+        // EmailJS 전송 (템플릿 변수명을 맞추는 것이 중요합니다)
         await emailjs.send("service_ae3ooe5", "template_1snauoj", {
             customer_name: name,
             customer_phone: phone,
-            order_list: itemDetails, 
+            order_list: itemDetails, // 이메일 템플릿에 {{order_list}}로 설정
             total_amount: totalPrice,
             message: memo
         });
