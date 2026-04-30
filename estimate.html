@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>실시간 견적 | Well Design</title>
+    <title>견적내기 | Well Design</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -106,14 +106,27 @@
                 <div class="sticky-summary bg-white p-6 rounded-3xl shadow-xl border border-gray-100">
                     <h2 class="text-xl font-black mb-6">견적 요약</h2>
                     
-                    <div class="mb-4 p-4 bg-blue-50 rounded-2xl border border-blue-100 flex items-center gap-3 cursor-pointer" onclick="toggleAssembly()">
-                        <input type="checkbox" id="assemblyCheck" class="w-5 h-5 accent-blue-600" onchange="updateSummary()">
-                        <div class="flex-1">
-                            <p class="text-[10px] font-bold text-blue-600 uppercase">별도 선택</p>
-                            <p class="text-sm font-bold text-gray-800">조립 및 1년 출장 A/S</p>
-                        </div>
-                        <span class="text-sm font-black text-blue-600">100,000원</span>
-                    </div>
+<div class="space-y-2 mb-4">
+    <!-- 조립비 선택 -->
+    <div class="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex items-center gap-3 cursor-pointer" onclick="toggleOption('assemblyCheck')">
+        <input type="checkbox" id="assemblyCheck" class="w-5 h-5 accent-blue-600" onchange="updateSummary()" checked>
+        <div class="flex-1">
+            <p class="text-[10px] font-bold text-blue-600 uppercase">기본 서비스</p>
+            <p class="text-sm font-bold text-gray-800">컴퓨터 조립비</p>
+        </div>
+        <span class="text-sm font-black text-blue-600">50,000원</span>
+    </div>
+
+    <!-- 출장 A/S 선택 -->
+    <div class="p-4 bg-indigo-50 rounded-2xl border border-indigo-100 flex items-center gap-3 cursor-pointer" onclick="toggleOption('asCheck')">
+        <input type="checkbox" id="asCheck" class="w-5 h-5 accent-blue-600" onchange="updateSummary()" checked>
+        <div class="flex-1">
+            <p class="text-[10px] font-bold text-indigo-600 uppercase">안심 케어</p>
+            <p class="text-sm font-bold text-gray-800">출장 A/S</p>
+        </div>
+        <span class="text-sm font-black text-indigo-600">40,000원</span>
+    </div>
+</div>
 
                     <div id="selectedSummary" class="space-y-4 mb-8 max-h-[40vh] overflow-y-auto no-scrollbar">
                         <p class="text-gray-400 text-sm text-center py-10">선택된 부품이 없습니다.</p>
@@ -188,7 +201,15 @@
         const db = firebase.database();
 
         let selectedItems = {};
-        const ASSEMBLY_FEE = 100000;
+  const ASSEMBLY_FEE = 50000;
+  const AS_SERVICE_FEE = 40000;
+
+// [수정] 옵션 토글 함수
+function toggleOption(id) {
+    const check = document.getElementById(id);
+    if (event.target.type !== 'checkbox') check.checked = !check.checked;
+    updateSummary();
+}
 
         function loadParts() {
             const container = document.getElementById('partsContainer');
@@ -276,12 +297,16 @@
             updateSummary();
         }
 
+// [수정] 가격 계산 로직 (두 체크박스 모두 반영)
 function updateSummary() {
     const summary = document.getElementById('selectedSummary');
     const totalDisplay = document.getElementById('totalDisplay');
     const isAssemblyChecked = document.getElementById('assemblyCheck').checked;
+    const isAsChecked = document.getElementById('asCheck').checked;
     
-    let total = isAssemblyChecked ? ASSEMBLY_FEE : 0;
+    let total = 0;
+    if (isAssemblyChecked) total += ASSEMBLY_FEE;
+    if (isAsChecked) total += AS_SERVICE_FEE;
     
     let html = Object.entries(selectedItems).map(([cat, item]) => {
         const itemTotal = item.price * item.count;
@@ -306,12 +331,7 @@ function updateSummary() {
 
     summary.innerHTML = html || '<p class="text-gray-400 text-sm text-center py-10">선택된 부품이 없습니다.</p>';
     totalDisplay.innerText = total.toLocaleString() + '원';
-
-    // 물품 추가시 스크롤을 맨 아래로 이동시켜 마지막 물품이 보이게 함
-    summary.scrollTo({
-        top: summary.scrollHeight,
-        behavior: 'smooth'
-    });
+    summary.scrollTo({ top: summary.scrollHeight, behavior: 'smooth' });
 }
 
 // PDF 인쇄 함수 (본체 부품과 주변기기 분리 버전)
@@ -429,13 +449,17 @@ document.getElementById('consultForm').addEventListener('submit', async function
     const isAssemblyChecked = document.getElementById('assemblyCheck').checked;
 
     // 관리자 페이지 및 이메일 전송을 위한 상세 텍스트 생성
-    let itemDetails = Object.entries(selectedItems)
-        .map(([cat, item]) => `${cat}: ${item.name} (${item.count}개) - ${(item.price * item.count).toLocaleString()}원`)
-        .join('\n');
+// [수정] 신청 폼 전송 시 상세 텍스트 생성 부분
+let itemDetails = Object.entries(selectedItems)
+    .map(([cat, item]) => `${cat}: ${item.name} (${item.count}개) - ${(item.price * item.count).toLocaleString()}원`)
+    .join('\n');
 
-    if (isAssemblyChecked) {
-        itemDetails += `\n[추가] 조립 및 1년 출장 A/S: 100,000원`;
-    }
+if (document.getElementById('assemblyCheck').checked) {
+    itemDetails += `\n[서비스] 컴퓨터 조립비: 50,000원`;
+}
+if (document.getElementById('asCheck').checked) {
+    itemDetails += `\n[서비스] 출장 A/S: 40,000원`;
+}
 
     // 전송할 데이터 객체 (가격 정보 누락 방지)
     const requestData = {
@@ -470,11 +494,12 @@ document.getElementById('consultForm').addEventListener('submit', async function
         alert('상담 신청이 완료되었습니다. 새 탭에서 견적서를 확인하세요.');
         
         // 3. PDF 새 탭 생성 호출
-        generatePDFInNewTab({
-            ...requestData, 
-            items: selectedItems, 
-            isAssembly: isAssemblyChecked
-        });
+generatePDFInNewTab({
+    ...requestData, 
+    items: selectedItems, 
+    isAssembly: document.getElementById('assemblyCheck').checked,
+    isAs: document.getElementById('asCheck').checked // 필드 추가
+});
 
         location.reload(); 
 
